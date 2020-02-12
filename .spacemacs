@@ -110,8 +110,6 @@
                 nil))
 (defun ndu-taskjuggler ()
    (load "~/.emacs.d/manuallyInstalled/taskjuggler-mode.el"))
-(defun ndu-anki ()
-  (load "~/.emacs.d/manuallyInstalled/anki-editor.el"))
 (defun ndu-clojure ()
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu-emacs-lisp ()
@@ -310,14 +308,6 @@
           (evil-emacs-state-modes wordnut-mode)))
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (global-visual-line-mode t)
-  (spacemacs/set-leader-keys "oa" 'anki-editor-cloze-dwim)
-  (spacemacs/set-leader-keys "os" 'anki-editor-cloze-region)
-  (spacemacs/set-leader-keys "ol" 'anki-editor-latex-region)
-  (spacemacs/set-leader-keys "op" 'anki-editor-push-notes)
-  (spacemacs/set-leader-keys "oo" 'anki-editor-retry-failure-notes)
-  (spacemacs/set-leader-keys "oi" 'anki-editor-insert-note)
-  (spacemacs/set-leader-keys "on" 'chronos-add-timers-from-string)
-  (spacemacs/set-leader-keys "om" 'chronos-delete-all-expired)
   (setq-default
     dotspacemacs-whitespace-cleanup 'all
     auto-save-default nil
@@ -344,11 +334,11 @@
            ndu-chronos
            ndu-org-mode
            ndu-latex
-           ndu-anki
            ndu-ansi-color
            ndu-doxymacs
            ndu-taskjuggler
            ndu-clojure
            ndu-emacs-lisp
            ndu-c-mode))
-  (find-file "~/org/gtd.org"))
+  (find-file "~/org/gtd.org")
+  (switch-to-buffer "gtd.org"))
