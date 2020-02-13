@@ -192,8 +192,8 @@
     dotspacemacs-colorize-cursor-according-to-state t
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
-    dotspacemacs-default-font '("Inconsolata"
-                                :size 18
+    dotspacemacs-default-font '("Courier New"
+                                :size 24
                                 :weight normal
                                 :width normal
                                 :powerline-scale 1.1)
@@ -313,7 +313,7 @@
     auto-save-default nil
     whitespace-line-column 80                    ; After 79 chars,
     whitespace-style '(face lines-tail)          ; highlight columns.
-    line-spacing 8                               ; space between lines
+    line-spacing 16                              ; space between lines
     auto-save-default nil
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
@@ -340,5 +340,17 @@
            ndu-clojure
            ndu-emacs-lisp
            ndu-c-mode))
-  (find-file "~/org/gtd.org")
-  (switch-to-buffer "gtd.org"))
+  (find-file "~/org/gtd.org"))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(evil-want-Y-yank-to-eol t)
+ '(python-shell-interpreter "python3"))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:background nil)))))
