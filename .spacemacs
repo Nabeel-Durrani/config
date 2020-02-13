@@ -67,13 +67,14 @@
       ;; (http://orgmode.org/manual/Breaking-down-tasks.html)
       org-log-done 'time
       org-directory "~/org"
-      org-agenda-files '("~/org/gtd.org" "~/org/tasks.org")
+      org-agenda-files '("~/org/gtd.org")
       ;; MobileOrg iphone app
       ;; http://mobileorg.ncogni.to/doc/getting-started/using-dropbox/
       ;; Set to the location of your Org files on your local system
       ;; Set to the name of the file where new notes will be stored
-      org-mobile-inbox-for-pull "~/org/in.org"
-      org-mobile-directory "~/windoze/Dropbox/Apps/MobileOrg")))
+      ;org-mobile-inbox-for-pull "~/org/in.org"
+      ;org-mobile-directory "~/windoze/Dropbox/Apps/MobileOrg"
+      )))
 (defun ndu-latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
@@ -136,9 +137,8 @@
     ;; List of configuration layers to load. If it is the symbol `all' instead
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
-    ;; git version-control
-	'(ivy org shell pdf-tools auto-completion better-defaults markdown
-	  syntax-checking semantic gtags java c-c++ emacs-lisp 
+	'(helm org git shell pdf-tools auto-completion better-defaults markdown
+	  syntax-checking semantic gtags java c-c++ emacs-lisp
       themes-megapack csv python ess clojure scheme octave
       (latex :variables latex-build-command "LaTeX")
 	  (spell-checking :variables spell-checking-enable-by-default nil))
@@ -146,13 +146,12 @@
     ;; wrapped in a layer. If you need some configuration for these
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.
-    ;; evil-magit
     dotspacemacs-additional-packages '(chronos ansi-color
                                        evil-smartparens cdlatex helm-R
-                                       latex-extra latex-math-preview  
+                                       latex-extra latex-math-preview
                                        wordnut adaptive-wrap matlab-mode)
     ;; A list of packages and/or extensions that will not be install and loaded
-    dotspacemacs-excluded-packages '(spaceline);org-bullets
+    dotspacemacs-excluded-packages '(org-projectile)
     ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
     ;; are declared in a layer which is not a member of
     ;; the list `dotspacemacs-configuration-layers'. (default t)
@@ -171,6 +170,7 @@
     ;; uses emacs key bindings for vim's insert mode, but otherwise leaves evil
     ;; unchanged. (default 'vim)
     dotspacemacs-editing-style 'vim
+    dotspacemacs-line-numbers t
     ;; If non nil output loading progress in `*Messages*' buffer. (default nil)
     dotspacemacs-verbose-loading nil
     ;; Specify the startup banner. Default value is `official', it displays
@@ -301,20 +301,23 @@
   "Configuration function for user code.
    This function is called at the very end of Spacemacs initialization after
    layers configuration. You are free to put any user code. "
+  (with-eval-after-load 'company
+    (add-to-list 'company-backends '(company-capf company-dabbrev)))
   (mapc (lambda (x)
           (add-to-list (car x) (cadr x)))
         '((load-path "/usr/share/wordnet")
-          ; (company-backends (company-capf company-dabbrev))
           (evil-emacs-state-modes wordnut-mode)))
+  (add-hook 'before-save-hook 'delete-trailing-whitespace)
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (global-visual-line-mode t)
   (setq-default
     dotspacemacs-whitespace-cleanup 'all
-    auto-save-default nil
+    dotspacemacs-check-for-update t
+    python-shell-interpreter "python3"
+    auto-save-default t
     whitespace-line-column 80                    ; After 79 chars,
     whitespace-style '(face lines-tail)          ; highlight columns.
     line-spacing 16                              ; space between lines
-    auto-save-default nil
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
     flycheck-indication-mode 'left-fringe
@@ -323,14 +326,12 @@
                   ("C-<"  #'ndu-indent-relative-below)
                   ("C-\'" #'ndu-save-recompile))
                 t)
-  (add-to-list 'default-frame-alist '(font . "Inconsolata-18"))
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on
-           spacemacs/toggle-golden-ratio-on
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            global-flycheck-mode
-           ; global-company-mode
+           global-company-mode
            ndu-chronos
            ndu-org-mode
            ndu-latex
@@ -346,11 +347,12 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(evil-want-Y-yank-to-eol t)
- '(python-shell-interpreter "python3"))
+ '(package-selected-packages
+   (quote
+    (org-projectile org-category-capture zenburn-theme zen-and-art-theme yapfify xterm-color ws-butler wordnut winum white-sand-theme which-key volatile-highlights vi-tilde-fringe uuidgen use-package unfill underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme stickyfunc-enhance srefactor spaceline spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smeargle shell-pop seti-theme reverse-theme restart-emacs rebecca-theme rainbow-delimiters railscasts-theme pyvenv pytest pyenv-mode py-isort purple-haze-theme professional-theme popwin planet-theme pip-requirements phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pdf-tools pcre2el paradox orgit organic-green-theme org-present org-pomodoro org-mime org-download org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme neotree naquadah-theme mwim mustang-theme multi-term move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme matlab-mode material-theme markdown-toc majapahit-theme magit-gitflow madhat2r-theme macrostep lush-theme lorem-ipsum live-py-mode linum-relative link-hint light-soap-theme latex-math-preview latex-extra jbeans-theme jazz-theme ir-black-theme inkpot-theme indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make helm-gtags helm-gitignore helm-flx helm-descbinds helm-company helm-c-yasnippet helm-ag helm-R hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md ggtags geiser gandalf-theme fuzzy flyspell-correct-helm flycheck-pos-tip flx-ido flatui-theme flatland-theme fill-column-indicator farmhouse-theme fancy-battery eyebrowse expand-region exotica-theme exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-smartparens evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu ess-smart-equals ess-R-data-view espresso-theme eshell-z eshell-prompt-extras esh-help elisp-slime-nav dumb-jump dracula-theme django-theme disaster diminish define-word darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cython-mode cyberpunk-theme csv-mode company-statistics company-emacs-eclim company-c-headers company-auctex company-anaconda column-enforce-mode color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized cmake-mode clues-theme clojure-snippets clj-refactor clean-aindent-mode clang-format cider-eval-sexp-fu chronos cherry-blossom-theme cdlatex busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:background nil)))))
+ )
