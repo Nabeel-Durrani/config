@@ -1,6 +1,13 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu-nov-mode ()
+  (archive-mode)
+  (nov-mode)
+  (face-remap-add-relative 'variable-pitch
+                           :family "Liberation Serif"
+                           :height 2)
+  (olivetti-mode))
 (defun ndu-save-recompile () (interactive) (save-buffer) (recompile))
 (defun ndu-set-leader (package binds)
   (mapc (lambda (x)
@@ -120,8 +127,8 @@
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu-emacs-lisp ()
   (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode))
-(defun ndu-c-mode ()
-  (ndu-set-hooks '((c-mode-hook (helm-gtags-mode doxymacs-mode
+(defun ndu-c-mode () ;;helm-gtags-mode
+  (ndu-set-hooks '((c-mode-hook (doxymacs-mode
                                  (lambda ()
                                    (setq evil-shift-width 4)
                                    (ggtags-mode 1)
@@ -142,19 +149,26 @@
     ;; List of configuration layers to load. If it is the symbol `all' instead
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
-	'(helm org git shell pdf-tools auto-completion better-defaults markdown
-	  syntax-checking semantic gtags java c-c++ emacs-lisp
+    '(html ivy org git shell pdf-tools auto-completion better-defaults markdown
+	    syntax-checking semantic gtags java c-c++ emacs-lisp elfeed mu4e
       themes-megapack csv python ess clojure scheme octave
       (latex :variables latex-build-command "LaTeX")
-	  (spell-checking :variables spell-checking-enable-by-default nil))
+      (mu4e :variables mu4e-use-maildirs-extension t)
+      (mu4e :variables mu4e-enable-notifications t)
+      (shell :variables shell-enable-smart-eshell t)
+      (elfeed :variables elfeed-enable-web-interface t)
+      (elfeed :variables elfeed-enable-goodies nil)
+      (elfeed :variables rmh-elfeed-org-files (list "~/org/feeds.org"))
+	    (spell-checking :variables spell-checking-enable-by-default nil))
     ; List of additional packages that will be installed without being
     ;; wrapped in a layer. If you need some configuration for these
     ;; packages then consider to create a layer, you can also put the
-    ;; configuration in `dotspacemacs/config'.
+    ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(chronos ansi-color anki-editor
-                                       evil-smartparens cdlatex helm-R
+                                       evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
-                                       wordnut adaptive-wrap matlab-mode)
+                                       wordnut adaptive-wrap matlab-mode
+                                       nov olivetti)
     ;; A list of packages and/or extensions that will not be install and loaded
     dotspacemacs-excluded-packages '(org-projectile)
     ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
@@ -299,6 +313,20 @@
   "Initialization function for user code.
    It is called immediately after `dotspacemacs/init'.  You are free to put any
    user code."
+  (setq-default
+     mu4e-maildir "~/mail/mbsyncmail"
+     mu4e-get-mail-command "mbsync -c ~/.emacs.d/.mbsyncrc -a"
+     mu4e-index-update-in-background t
+     mu4e-update-interval 120
+     mu4e-headers-auto-update t
+     mu4e-attachment-dir "~/Downloads"
+     mu4e-drafts-folder "/Drafts"
+     mu4e-sent-folder   "/Sent Items"
+     mu4e-trash-folder  "/Deleted Items"
+     mu4e-view-show-images t
+     mu4e-enable-notifications t)
+  (with-eval-after-load 'mu4e-alert
+    (mu4e-alert-set-default-style 'libnotify))
   (define-key key-translation-map (kbd "C-<escape>") (kbd "ESC"))
   (define-key key-translation-map (kbd "ESC") (kbd "C-C C-G"))
   (global-set-key (kbd "C-c C-g") 'evil-escape))
@@ -306,8 +334,10 @@
   "Configuration function for user code.
    This function is called at the very end of Spacemacs initialization after
    layers configuration. You are free to put any user code. "
-  (with-eval-after-load 'company
-    (add-to-list 'company-backends '(company-capf company-dabbrev)))
+  ;(with-eval-after-load 'company
+  ; (add-to-list 'company-backends '(company-capf company-dabbrev)))
+  (use-package nov
+   :mode ("\\.epub\\'" . ndu-nov-mode))
   (mapc (lambda (x)
           (add-to-list (car x) (cadr x)))
         '((load-path "/usr/share/wordnet")
@@ -315,6 +345,7 @@
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (global-visual-line-mode t)
+  (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu-set-leader 'chronos
                   '(("on" chronos-add-timers-from-string)
                     ("om" chronos-delete-all-expired)))
@@ -325,11 +356,29 @@
                     ("op" anki-editor-push-notes)
                     ("oo" anki-editor-retry-failure-notes)
                     ("oi" anki-editor-insert-note)))
+  (spacemacs/set-leader-keys-for-major-mode 'nov-mode
+    "g" 'nov-render-document
+    "v" 'nov-view-source
+    "V" 'nov-view-content-source
+    "m" 'nov-display-metadata
+    "n" 'nov-next-document
+    "]" 'nov-next-document
+    "p" 'nov-previous-document
+    "[" 'nov-previous-document
+    "t" 'nov-goto-toc)
+  (when (fboundp 'imagemagick-register-types)
+    (imagemagick-register-types))
+  (add-to-list 'mu4e-headers-actions
+   '("View in browser" . mu4e-action-view-in-browser) t)
   (setq-default
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
+    flycheck-python-pycompile-executable "python3"
     python-shell-interpreter "python3"
     auto-save-default t
+    visual-fill-column-center-text t
+    vterm-always-compile-module t
+    nov-text-width 65
     whitespace-line-column 80                    ; After 79 chars,
     whitespace-style '(face lines-tail)          ; highlight columns.
     line-spacing 16                              ; space between lines
@@ -346,7 +395,7 @@
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            global-flycheck-mode
-           global-company-mode
+           global-auto-complete-mode
            ndu-chronos
            ndu-org-mode
            ndu-latex
@@ -357,17 +406,3 @@
            ndu-emacs-lisp
            ndu-c-mode))
   (find-file "~/org/gtd.org"))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (anki-editor zenburn-theme zen-and-art-theme yapfify xterm-color ws-butler wordnut winum white-sand-theme which-key volatile-highlights vi-tilde-fringe uuidgen use-package unfill underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme toc-org tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme stickyfunc-enhance srefactor spaceline spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smeargle shell-pop seti-theme reverse-theme restart-emacs rebecca-theme rainbow-delimiters railscasts-theme pyvenv pytest pyenv-mode py-isort purple-haze-theme professional-theme popwin planet-theme pip-requirements phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pdf-tools pcre2el paradox orgit organic-green-theme org-present org-pomodoro org-mime org-download org-bullets open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme neotree naquadah-theme mwim mustang-theme multi-term move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme matlab-mode material-theme markdown-toc majapahit-theme magit-gitflow madhat2r-theme macrostep lush-theme lorem-ipsum live-py-mode linum-relative link-hint light-soap-theme latex-math-preview latex-extra jbeans-theme jazz-theme ir-black-theme inkpot-theme indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation heroku-theme hemisu-theme helm-themes helm-swoop helm-pydoc helm-projectile helm-mode-manager helm-make helm-gtags helm-gitignore helm-flx helm-descbinds helm-company helm-c-yasnippet helm-ag helm-R hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio gnuplot gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md ggtags geiser gandalf-theme fuzzy flyspell-correct-helm flycheck-pos-tip flx-ido flatui-theme flatland-theme fill-column-indicator farmhouse-theme fancy-battery eyebrowse expand-region exotica-theme exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-smartparens evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu ess-smart-equals ess-R-data-view espresso-theme eshell-z eshell-prompt-extras esh-help elisp-slime-nav dumb-jump dracula-theme django-theme disaster diminish define-word darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cython-mode cyberpunk-theme csv-mode company-statistics company-emacs-eclim company-c-headers company-auctex company-anaconda column-enforce-mode color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized cmake-mode clues-theme clojure-snippets clj-refactor clean-aindent-mode clang-format cider-eval-sexp-fu chronos cherry-blossom-theme cdlatex busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent afternoon-theme adaptive-wrap ace-window ace-link ace-jump-helm-line ac-ispell))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
