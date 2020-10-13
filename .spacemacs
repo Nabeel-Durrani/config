@@ -1,12 +1,25 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu-eww-open (&optional use-generic-p)
+  "elfeed open with eww"
+  (interactive "P")
+  (let ((entries (elfeed-search-selected)))
+    (cl-loop for entry in entries
+             do (elfeed-untag entry 'unread)
+             when (elfeed-entry-link entry)
+             do (eww-browse-url it))
+    (mapc #'elfeed-search-update-entry entries)
+    (unless (use-region-p) (forward-line)))
+  (olivetti-mode)
+  (eww-readable))
+
 (defun ndu-nov-mode ()
   (archive-mode)
   (nov-mode)
   (face-remap-add-relative 'variable-pitch
                            :family "Liberation Serif"
-                           :height 2)
+                           :height 1.0)
   (olivetti-mode))
 (defun ndu-save-recompile () (interactive) (save-buffer) (recompile))
 (defun ndu-set-leader (package binds)
@@ -60,7 +73,6 @@
     "Switch entry to DONE when all subentries are done, to TODO otherwise."
     (let (org-log-done org-log-states)   ; turn off logging
       (org-todo (if (= n-not-done 0) "DONE" "TODO"))))
-
   (with-eval-after-load 'org
     ;; faster math input
     (ndu-set-hooks '((org-mode-hook (turn-on-org-cdlatex))
@@ -336,14 +348,14 @@
    layers configuration. You are free to put any user code. "
   ;(with-eval-after-load 'company
   ; (add-to-list 'company-backends '(company-capf company-dabbrev)))
-  (use-package nov
-   :mode ("\\.epub\\'" . ndu-nov-mode))
   (mapc (lambda (x)
           (add-to-list (car x) (cadr x)))
         '((load-path "/usr/share/wordnet")
           (evil-emacs-state-modes wordnut-mode)))
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
+  (use-package nov
+    :mode ("\\.epub\\'" . ndu-nov-mode))
   (global-visual-line-mode t)
   (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu-set-leader 'chronos
@@ -356,6 +368,7 @@
                     ("op" anki-editor-push-notes)
                     ("oo" anki-editor-retry-failure-notes)
                     ("oi" anki-editor-insert-note)))
+  (define-key elfeed-search-mode-map (kbd "m") 'ndu-eww-open)
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
@@ -367,7 +380,7 @@
     "[" 'nov-previous-document
     "t" 'nov-goto-toc)
   (when (fboundp 'imagemagick-register-types)
-    (imagemagick-register-types))
+   (imagemagick-register-types))
   (add-to-list 'mu4e-headers-actions
    '("View in browser" . mu4e-action-view-in-browser) t)
   (setq-default
@@ -378,10 +391,10 @@
     auto-save-default t
     visual-fill-column-center-text t
     vterm-always-compile-module t
-    nov-text-width 65
+    nov-text-width 60
     whitespace-line-column 80                    ; After 79 chars,
     whitespace-style '(face lines-tail)          ; highlight columns.
-    line-spacing 16                              ; space between lines
+    line-spacing 18                              ; space between lines
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
     flycheck-indication-mode 'left-fringe
