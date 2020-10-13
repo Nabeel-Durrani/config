@@ -326,6 +326,7 @@
    It is called immediately after `dotspacemacs/init'.  You are free to put any
    user code."
   (setq-default
+     line-spacing 16 ; space between lines
      mu4e-maildir "~/mail/mbsyncmail"
      mu4e-get-mail-command "mbsync -c ~/.emacs.d/.mbsyncrc -a"
      mu4e-index-update-in-background t
@@ -394,7 +395,6 @@
     nov-text-width 60
     whitespace-line-column 80                    ; After 79 chars,
     whitespace-style '(face lines-tail)          ; highlight columns.
-    line-spacing 18                              ; space between lines
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
     flycheck-indication-mode 'left-fringe
