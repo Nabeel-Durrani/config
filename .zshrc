@@ -1,17 +1,17 @@
 export EDITOR="vim"
-alias vi="emacsclient"
+alias vi="emacsclient -nw"
 export MARKPATH=$HOME/.marks
 
 alias l="ls -G1 *"
 
-function jump { 
+function jump {
     cd -P $MARKPATH/$1 2>/dev/null || echo "No such mark: $1"
 }
-function mark { 
+function mark {
     mkdir -p $MARKPATH; ln -s $(pwd) $MARKPATH/$1
 }
-function unmark { 
-    rm -i $MARKPATH/$1 
+function unmark {
+    rm -i $MARKPATH/$1
 }
 function marks {
     ls -l $MARKPATH | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
@@ -32,10 +32,10 @@ vterm_printf(){
 if [[ "$INSIDE_EMACS" = 'vterm' ]]; then
     alias clear='vterm_printf "51;Evterm-clear-scrollback";tput clear'
 fi
-autoload -U add-zsh-hook
-add-zsh-hook -Uz chpwd (){ print -Pn "\e]2;%m:%2~\a" }
-
 set -o vi
-export PATH="/home/ndu/.pyenv/bin:$PATH"
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
+#autoload -U add-zsh-hook
+#add-zsh-hook -Uz chpwd (){ print -Pn "\e]2;%m:%2~\a" }
+
+#export PATH="/home/ndu/.pyenv/bin:$PATH"
+#eval "$(pyenv init -)"
+#eval "$(pyenv virtualenv-init -)"

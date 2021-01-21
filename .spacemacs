@@ -1,6 +1,22 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+; https://github.com/tkf/org-mode/blob/master/lisp/org-faces.el
+(defun org-copy-face (old-face new-face docstring &rest attributes)
+  (unless (facep new-face)
+    (if (fboundp 'set-face-attribute)
+        (progn
+          (make-face new-face)
+          (set-face-attribute new-face nil :inherit old-face)
+          (apply 'set-face-attribute new-face nil attributes)
+          (set-face-doc-string new-face docstring))
+      (copy-face old-face new-face)
+      (if (fboundp 'set-face-doc-string)
+          (set-face-doc-string new-face docstring)))))
+(put 'org-copy-face 'lisp-indent-function 2)
+(defun ndu-view-tag (str)
+  "Concat STR with @6-months-ago +unread."
+  (concat "@6-months-ago +unread " str))
 (defun ndu-eww-open (&optional use-generic-p)
   "elfeed open with eww"
   (interactive "P")
@@ -10,9 +26,7 @@
              when (elfeed-entry-link entry)
              do (eww-browse-url it))
     (mapc #'elfeed-search-update-entry entries)
-    (unless (use-region-p) (forward-line)))
-  (olivetti-mode)
-  (eww-readable))
+    (unless (use-region-p) (forward-line))))
 
 (defun ndu-nov-mode ()
   (archive-mode)
@@ -21,6 +35,23 @@
                            :family "Liberation Serif"
                            :height 1.0)
   (olivetti-mode))
+(defun ndu-elfeed-mode ()
+  (require 'elfeed)
+  (define-key elfeed-search-mode-map (kbd "m") 'ndu-eww-open)
+  (defhydra ap/elfeed-search-view (elfeed-search-mode-map "d" :color blue)
+                                        ; press d + (h, j, etc)
+    "Set elfeed-search filter tags."
+    ("h" (elfeed-search-set-filter nil) "Default")
+    ("j" (elfeed-search-set-filter (ndu-view-tag "+left")) "left")
+    ("k" (elfeed-search-set-filter (ndu-view-tag "+news")) "news")
+    ("l" (elfeed-search-set-filter (ndu-view-tag "+foreign")) "foreign")
+    ("b" (elfeed-search-set-filter (ndu-view-tag "+opinion")) "opinion")
+    ("n" (elfeed-search-set-filter (ndu-view-tag "+tech")) "tech"))
+  (ndu-set-hooks '((elfeed-search-mode-hook (olivetti-mode))
+                   (elfeed-show-mode-hook (olivetti-mode))
+                   (eww-mode-hook (olivetti-mode))
+                   (eww-mode-hook (writeroom-mode))))
+  (add-hook 'eww-after-render-hook 'eww-readable))
 (defun ndu-save-recompile () (interactive) (save-buffer) (recompile))
 (defun ndu-set-leader (package binds)
   (mapc (lambda (x)
@@ -75,13 +106,38 @@
       (org-todo (if (= n-not-done 0) "DONE" "TODO"))))
   (with-eval-after-load 'org
     ;; faster math input
+    (dolist (face '(org-level-1
+                    org-level-2
+                    org-level-3
+                    org-level-4
+                    org-level-5))
+      (set-face-attribute face nil :weight 'regular :height 1.0))
     (ndu-set-hooks '((org-mode-hook (turn-on-org-cdlatex))
-                    (org-after-todo-statistics-hook (org-summary-todo))))
+                     (org-mode-hook (auto-complete-mode))
+                     (org-mode-hook (olivetti-mode))
+                     (org-mode-hook (writeroom-mode))
+                     (org-mode-hook
+                      ((lambda ()
+                         (push '("[ ]" .  "🞎") prettify-symbols-alist)
+                         (push '("[X]" . "🗷" ) prettify-symbols-alist)
+                         (push '("-" . "—" ) prettify-symbols-alist)
+                         (push '("::" . "⁚" ) prettify-symbols-alist)
+                         (prettify-symbols-mode))))
+                     (org-after-todo-statistics-hook (org-summary-todo))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-			   `(("n" "note" plain (file+headline "~/org/gtd.org" "Inbox") "- %?")))
+          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes")
+             "- %?" :prepend t)))
     (setq-default
-      org-bullets-bullet-list '("■" "◆" "▲" "▶")
+     org-emphasis-alist '(("*" bold)
+                          ("/" italic)
+                          ("_" underline)
+                          ("=" (bold :foreground "black" :background "red"))
+                          ("~" (bold :foreground "black" :background "orange"))
+                          ("+" (bold :foreground "black" :background "green")))
+     org-superstar-item-bullet-alist '((?* . ?↠) (?+ . ?⇝) (?- . ?→))
+     org-superstar-headline-bullets-list '("■" "◆" "•" "◉" "○" "▶")
+     org-checkbox-hierarchical-statistics nil
       ;; disable confirm message when evaluating stuff for org-babel
       ;org-confirm-babel-evaluate nil
       ;; org-capture
@@ -90,6 +146,8 @@
       ;; children are done, you can use the following setup.
       ;; (http://orgmode.org/manual/Breaking-down-tasks.html)
       org-log-done 'time
+      org-todo-keyword-faces '(("TODO" . (:foreground "purple4" :weight bold))
+                               ("DONE" . (:foreground "purple1" :weight bold)))
       org-directory "~/org"
       org-agenda-files '("~/org/gtd.org")
       ;; MobileOrg iphone app
@@ -98,7 +156,12 @@
       ;; Set to the name of the file where new notes will be stored
       ;org-mobile-inbox-for-pull "~/org/in.org"
       ;org-mobile-directory "~/windoze/Dropbox/Apps/MobileOrg"
-      )))
+      org-priority-faces '((?A . (:foreground "PaleVioletRed" :weight bold))
+                           (?B . (:foreground "orange"        :weight bold))
+                           (?C . (:foreground "green"         :weight bold)))))
+  (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
+  (org-copy-face 'org-todo 'org-checkbox-statistics-todo
+                 "Face used for unfinished checkbox statistics."))
 (defun ndu-latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
@@ -108,7 +171,9 @@
   ;; note: support for this environment is only partial if auctex sees
   ;; the 'usepackage' macro for it - need following code for full support
   (ndu-set-hooks '((LaTeX-mode-hook ((lambda () (setq evil-shift-width 2))
-                                     add-envs))))
+                                     add-envs))
+                   (LaTeX-mode-hook (olivetti-mode))
+                   (LaTeX-mode-hook (writeroom-mode))))
   (setq-default
     font-latex-math-environments '("display" "displaymath" "equation"
                                     "eqnarray" "gather" "multline" "align"
@@ -138,12 +203,13 @@
 (defun ndu-clojure ()
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu-emacs-lisp ()
-  (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode))
+  (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode)
+  (add-hook 'emacs-lisp-mode-hook (olivetti-mode)))
 (defun ndu-c-mode () ;;helm-gtags-mode
   (ndu-set-hooks '((c-mode-hook (doxymacs-mode
                                  (lambda ()
                                    (setq evil-shift-width 4)
-                                   (ggtags-mode 1)
+                                   ; (ggtags-mode 1)
                                    (setq-default c-basic-offset 4)
                                    (flycheck-select-checker 'c/c++-gcc)))))))
 (defun dotspacemacs/layers ()
@@ -161,14 +227,25 @@
     ;; List of configuration layers to load. If it is the symbol `all' instead
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
-    '(html ivy org git shell pdf-tools auto-completion better-defaults markdown
-	    syntax-checking semantic gtags java c-c++ emacs-lisp elfeed mu4e
-      themes-megapack csv python ess clojure scheme octave
+    '(html ivy org git pdf
+      (shell :variables shell-default-shell 'ansi-term)
+      (auto-completion
+       :variables spacemacs-default-company-backends '(company-files
+                                                       company-capf))
+      better-defaults markdown
+      syntax-checking  ; gtags java
+      (lsp :variables lsp-lens-enable t)
+      (c-c++
+       :variables
+       c-c++-adopt-subprojects t
+       c-c++-backend 'lsp-cclas)
+      dap emacs-lisp elfeed ;mu4e semantic themes-megapack
+      csv python ess clojure scheme octave
       (latex :variables latex-build-command "LaTeX")
-      (mu4e :variables mu4e-use-maildirs-extension t)
-      (mu4e :variables mu4e-enable-notifications t)
-      (shell :variables shell-enable-smart-eshell t)
-      (elfeed :variables elfeed-enable-web-interface t)
+      ;(mu4e :variables mu4e-use-maildirs-extension t)
+      ;(mu4e :variables mu4e-enable-notifications t)
+      ;(shell :variables shell-enable-smart-Eshell t)
+      ;(elfeed :variables elfeed-enable-web-interface t)
       (elfeed :variables elfeed-enable-goodies nil)
       (elfeed :variables rmh-elfeed-org-files (list "~/org/feeds.org"))
 	    (spell-checking :variables spell-checking-enable-by-default nil))
@@ -180,7 +257,8 @@
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
                                        wordnut adaptive-wrap matlab-mode
-                                       nov olivetti)
+                                       nov olivetti hydra lsp-mode lsp-ui
+                                       ccls)
     ;; A list of packages and/or extensions that will not be install and loaded
     dotspacemacs-excluded-packages '(org-projectile)
     ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
@@ -214,18 +292,18 @@
     ;; List of items to show in the startup buffer. If nil it is disabled.
     ;; Possible values are: `recents' `bookmarks' `projects'.
     ;; (default '(recents projects))
-    dotspacemacs-startup-lists '(recents projects)
+    ; ;dotspacemacs-startup-lists '(recents)
     ;; List of themes, the first of the list is loaded when spacemacs starts.
     ;; Press <SPC> T n to cycle to the next theme in the list (works great
     ;; with 2 themes variants, one dark and one light)
-    dotspacemacs-themes '(sanityinc-tomorrow-day)
+    dotspacemacs-themes '(tsdh-light)
     ;; If non nil the cursor color matches the state color.
     dotspacemacs-colorize-cursor-according-to-state t
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
-    dotspacemacs-default-font '("Courier New"
-                                :size 24
-                                :weight normal
+    dotspacemacs-default-font '("Source Code Pro Light"
+                                :size 30
+                                :weight light
                                 :width normal
                                 :powerline-scale 1.1)
     ;; The leader key
@@ -326,20 +404,21 @@
    It is called immediately after `dotspacemacs/init'.  You are free to put any
    user code."
   (setq-default
-     line-spacing 16 ; space between lines
-     mu4e-maildir "~/mail/mbsyncmail"
-     mu4e-get-mail-command "mbsync -c ~/.emacs.d/.mbsyncrc -a"
-     mu4e-index-update-in-background t
-     mu4e-update-interval 120
-     mu4e-headers-auto-update t
-     mu4e-attachment-dir "~/Downloads"
-     mu4e-drafts-folder "/Drafts"
-     mu4e-sent-folder   "/Sent Items"
-     mu4e-trash-folder  "/Deleted Items"
-     mu4e-view-show-images t
-     mu4e-enable-notifications t)
-  (with-eval-after-load 'mu4e-alert
-    (mu4e-alert-set-default-style 'libnotify))
+     line-spacing 40 ; space between lines
+     ;mu4e-maildir "~/mail/mbsyncmail"
+     ;mu4e-get-mail-command "mbsync -c ~/.emacs.d/.mbsyncrc -a"
+     ;mu4e-index-update-in-background t
+     ;mu4e-update-interval 120
+     ;mu4e-headers-auto-update t
+     ;mu4e-attachment-dir "~/Downloads"
+     ;mu4e-drafts-folder "/Drafts"
+     ;mu4e-sent-folder   "/Sent Items"
+     ;mu4e-trash-folder  "/Deleted Items"
+     ;mu4e-view-show-images t
+     ;mu4e-enable-notifications t
+     )
+  ;(with-eval-after-load 'mu4e-alert
+  ;  (mu4e-alert-set-default-style 'libnotify))
   (define-key key-translation-map (kbd "C-<escape>") (kbd "ESC"))
   (define-key key-translation-map (kbd "ESC") (kbd "C-C C-G"))
   (global-set-key (kbd "C-c C-g") 'evil-escape))
@@ -358,7 +437,7 @@
   (use-package nov
     :mode ("\\.epub\\'" . ndu-nov-mode))
   (global-visual-line-mode t)
-  (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
+  ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu-set-leader 'chronos
                   '(("on" chronos-add-timers-from-string)
                     ("om" chronos-delete-all-expired)))
@@ -369,7 +448,6 @@
                     ("op" anki-editor-push-notes)
                     ("oo" anki-editor-retry-failure-notes)
                     ("oi" anki-editor-insert-note)))
-  (define-key elfeed-search-mode-map (kbd "m") 'ndu-eww-open)
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
@@ -382,33 +460,50 @@
     "t" 'nov-goto-toc)
   (when (fboundp 'imagemagick-register-types)
    (imagemagick-register-types))
-  (add-to-list 'mu4e-headers-actions
-   '("View in browser" . mu4e-action-view-in-browser) t)
+  ;(add-to-list 'mu4e-headers-actions
+  ; '("View in browser" . mu4e-action-view-in-browser) t)
   (setq-default
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
+    spacemacs-yank-indent-threshold 0
     flycheck-python-pycompile-executable "python3"
     python-shell-interpreter "python3"
     auto-save-default t
     visual-fill-column-center-text t
     vterm-always-compile-module t
+    olivetti-style 'fancy
+    olivetti-body-width 86
+    writeroom-width 86
+    olivetti-margin-width 5
     nov-text-width 60
+    c-default-style "k&r"
+    c-basic-offset 4
+    org-hide-emphasis-markers t
     whitespace-line-column 80                    ; After 79 chars,
     whitespace-style '(face lines-tail)          ; highlight columns.
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
     flycheck-indication-mode 'left-fringe
-    evil-use-y-for-yank t)
+    evil-use-y-for-yank t
+    c-c++-lsp-enable-semantic-highlight t)
   (ndu-set-keys '(("C->"  #'indent-relative)
                   ("C-<"  #'ndu-indent-relative-below)
                   ("C-\'" #'ndu-save-recompile))
                 t)
+  (ndu-set-hooks '((python-mode-hook (olivetti-mode))
+                   (c-mode-hook (olivetti-mode))
+                   (emacs-lisp-mode-hook (olivetti-mode))
+                   (sh-mode-hook (olivetti-mode))
+                   (c++-mode-hook (olivetti-mode))
+                   (c++-mode-hook (lsp))
+                   (term-mode-hook (olivetti-mode))
+                   (term-mode-hook (writeroom-mode))))
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            global-flycheck-mode
-           global-auto-complete-mode
+           ; global-auto-complete-mode
            ndu-chronos
            ndu-org-mode
            ndu-latex
@@ -417,5 +512,6 @@
            ndu-taskjuggler
            ndu-clojure
            ndu-emacs-lisp
-           ndu-c-mode))
+           ndu-c-mode
+           ndu-elfeed-mode))
   (find-file "~/org/gtd.org"))
