@@ -1,6 +1,9 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu-view-tag (str)
+  "Concat STR with @6-months-ago +unread."
+  (concat "@6-months-ago +unread " str))
 (defun ndu-eww-open (&optional use-generic-p)
   "elfeed open with eww"
   (interactive "P")
@@ -162,13 +165,13 @@
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
     '(html ivy org git shell pdf-tools auto-completion better-defaults markdown
-	    syntax-checking semantic gtags java c-c++ emacs-lisp elfeed mu4e
+      syntax-checking  gtags java c-c++ emacs-lisp elfeed ;mu4e semantic
       themes-megapack csv python ess clojure scheme octave
       (latex :variables latex-build-command "LaTeX")
-      (mu4e :variables mu4e-use-maildirs-extension t)
-      (mu4e :variables mu4e-enable-notifications t)
+      ;(mu4e :variables mu4e-use-maildirs-extension t)
+      ;(mu4e :variables mu4e-enable-notifications t)
       (shell :variables shell-enable-smart-eshell t)
-      (elfeed :variables elfeed-enable-web-interface t)
+      ;(elfeed :variables elfeed-enable-web-interface t)
       (elfeed :variables elfeed-enable-goodies nil)
       (elfeed :variables rmh-elfeed-org-files (list "~/org/feeds.org"))
 	    (spell-checking :variables spell-checking-enable-by-default nil))
@@ -180,7 +183,7 @@
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
                                        wordnut adaptive-wrap matlab-mode
-                                       nov olivetti)
+                                       nov olivetti hydra)
     ;; A list of packages and/or extensions that will not be install and loaded
     dotspacemacs-excluded-packages '(org-projectile)
     ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
@@ -327,19 +330,20 @@
    user code."
   (setq-default
      line-spacing 16 ; space between lines
-     mu4e-maildir "~/mail/mbsyncmail"
-     mu4e-get-mail-command "mbsync -c ~/.emacs.d/.mbsyncrc -a"
-     mu4e-index-update-in-background t
-     mu4e-update-interval 120
-     mu4e-headers-auto-update t
-     mu4e-attachment-dir "~/Downloads"
-     mu4e-drafts-folder "/Drafts"
-     mu4e-sent-folder   "/Sent Items"
-     mu4e-trash-folder  "/Deleted Items"
-     mu4e-view-show-images t
-     mu4e-enable-notifications t)
-  (with-eval-after-load 'mu4e-alert
-    (mu4e-alert-set-default-style 'libnotify))
+     ;mu4e-maildir "~/mail/mbsyncmail"
+     ;mu4e-get-mail-command "mbsync -c ~/.emacs.d/.mbsyncrc -a"
+     ;mu4e-index-update-in-background t
+     ;mu4e-update-interval 120
+     ;mu4e-headers-auto-update t
+     ;mu4e-attachment-dir "~/Downloads"
+     ;mu4e-drafts-folder "/Drafts"
+     ;mu4e-sent-folder   "/Sent Items"
+     ;mu4e-trash-folder  "/Deleted Items"
+     ;mu4e-view-show-images t
+     ;mu4e-enable-notifications t
+     )
+  ;(with-eval-after-load 'mu4e-alert
+  ;  (mu4e-alert-set-default-style 'libnotify))
   (define-key key-translation-map (kbd "C-<escape>") (kbd "ESC"))
   (define-key key-translation-map (kbd "ESC") (kbd "C-C C-G"))
   (global-set-key (kbd "C-c C-g") 'evil-escape))
@@ -358,7 +362,7 @@
   (use-package nov
     :mode ("\\.epub\\'" . ndu-nov-mode))
   (global-visual-line-mode t)
-  (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
+  ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu-set-leader 'chronos
                   '(("on" chronos-add-timers-from-string)
                     ("om" chronos-delete-all-expired)))
@@ -369,7 +373,6 @@
                     ("op" anki-editor-push-notes)
                     ("oo" anki-editor-retry-failure-notes)
                     ("oi" anki-editor-insert-note)))
-  (define-key elfeed-search-mode-map (kbd "m") 'ndu-eww-open)
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
@@ -382,8 +385,8 @@
     "t" 'nov-goto-toc)
   (when (fboundp 'imagemagick-register-types)
    (imagemagick-register-types))
-  (add-to-list 'mu4e-headers-actions
-   '("View in browser" . mu4e-action-view-in-browser) t)
+  ;(add-to-list 'mu4e-headers-actions
+  ; '("View in browser" . mu4e-action-view-in-browser) t)
   (setq-default
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
@@ -403,6 +406,17 @@
                   ("C-<"  #'ndu-indent-relative-below)
                   ("C-\'" #'ndu-save-recompile))
                 t)
+  (require 'elfeed)
+  (define-key elfeed-search-mode-map (kbd "m") 'ndu-eww-open)
+  (defhydra ap/elfeed-search-view (elfeed-search-mode-map "d" :color blue)
+    ; press d + (h, j, etc)
+    "Set elfeed-search filter tags."
+    ("h" (elfeed-search-set-filter nil) "Default")
+    ("j" (elfeed-search-set-filter (ndu-view-tag "+left")) "left")
+    ("k" (elfeed-search-set-filter (ndu-view-tag "+news")) "news")
+    ("l" (elfeed-search-set-filter (ndu-view-tag "+foreign")) "foreign")
+    ("b" (elfeed-search-set-filter (ndu-view-tag "+opinion")) "opinion")
+    ("n" (elfeed-search-set-filter (ndu-view-tag "+tech")) "tech"))
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on
            spacemacs/toggle-highlight-current-line-globally-off
