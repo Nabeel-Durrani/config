@@ -463,7 +463,7 @@
   ;(add-to-list 'mu4e-headers-actions
   ; '("View in browser" . mu4e-action-view-in-browser) t)
   (setq-default
-    org-clock-sound "/home/ndu/org/manuallyinstalled/bell.wav"
+    org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
     spacemacs-yank-indent-threshold 0
