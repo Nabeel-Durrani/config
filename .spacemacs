@@ -464,6 +464,7 @@
   ; '("View in browser" . mu4e-action-view-in-browser) t)
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
+    org-timer-default-timer "0:25:00"
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
     spacemacs-yank-indent-threshold 0
