@@ -2,6 +2,36 @@
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
 ; https://github.com/tkf/org-mode/blob/master/lisp/org-faces.el
+; https://abizjak.github.io/emacs/2016/03/06/latex-fill-paragraph.html
+(defun ndu/fill-paragraph (&optional P)
+  "When called with prefix argument call `fill-paragraph'.
+Otherwise split the current paragraph into one sentence per line."
+  (interactive "P")
+  (if (not P)
+      (save-excursion
+        (let ((fill-column 12345678)) ;; relies on dynamic binding
+          (fill-paragraph) ;; this will not work correctly if the paragraph is
+                           ;; longer than 12345678 characters (in which case the
+                           ;; file must be at least 12MB long. This is unlikely.)
+          (let ((end (save-excursion
+                       (forward-paragraph 1)
+                       (backward-sentence)
+                       (point-marker))))  ;; remember where to stop
+            (beginning-of-line)
+            (while (progn (forward-sentence)
+                          (<= (point) (marker-position end)))
+              (just-one-space) ;; leaves only one space, point is after it
+              (delete-char -1) ;; delete the space
+              ;; and insert a newline
+              (newline)
+              (indent-relative)))))
+    (fill-paragraph P))) ;; otherwise do ordinary fill paragraph
+; https://emacs.stackexchange.com/questions/67956/trying-to-set-org-clock-sound-for-org-timer
+(defun my/play-sound (orgin-fn sound)
+  (cl-destructuring-bind (_ _ file) sound
+    (make-process :name (concat "play-sound-" file)
+                  :connection-type 'pipe
+                  :command `("afplay" ,file))))
 (defun org-copy-face (old-face new-face docstring &rest attributes)
   (unless (facep new-face)
     (if (fboundp 'set-face-attribute)
@@ -14,10 +44,10 @@
       (if (fboundp 'set-face-doc-string)
           (set-face-doc-string new-face docstring)))))
 (put 'org-copy-face 'lisp-indent-function 2)
-(defun ndu-view-tag (str)
+(defun ndu/view-tag (str)
   "Concat STR with @6-months-ago +unread."
   (concat "@6-months-ago +unread " str))
-(defun ndu-eww-open (&optional use-generic-p)
+(defun ndu/eww-open (&optional use-generic-p)
   "elfeed open with eww"
   (interactive "P")
   (let ((entries (elfeed-search-selected)))
@@ -28,49 +58,49 @@
     (mapc #'elfeed-search-update-entry entries)
     (unless (use-region-p) (forward-line))))
 
-(defun ndu-nov-mode ()
+(defun ndu/nov-mode ()
   (archive-mode)
   (nov-mode)
   (face-remap-add-relative 'variable-pitch
                            :family "Liberation Serif"
                            :height 1.0)
   (olivetti-mode))
-(defun ndu-elfeed-mode ()
+(defun ndu/elfeed-mode ()
   (require 'elfeed)
-  (define-key elfeed-search-mode-map (kbd "m") 'ndu-eww-open)
+  (define-key elfeed-search-mode-map (kbd "m") 'ndu/eww-open)
   (defhydra ap/elfeed-search-view (elfeed-search-mode-map "d" :color blue)
                                         ; press d + (h, j, etc)
     "Set elfeed-search filter tags."
     ("h" (elfeed-search-set-filter nil) "Default")
-    ("j" (elfeed-search-set-filter (ndu-view-tag "+left")) "left")
-    ("k" (elfeed-search-set-filter (ndu-view-tag "+news")) "news")
-    ("l" (elfeed-search-set-filter (ndu-view-tag "+foreign")) "foreign")
-    ("b" (elfeed-search-set-filter (ndu-view-tag "+opinion")) "opinion")
-    ("n" (elfeed-search-set-filter (ndu-view-tag "+tech")) "tech"))
-  (ndu-set-hooks '((elfeed-search-mode-hook (olivetti-mode))
+    ("j" (elfeed-search-set-filter (ndu/view-tag "+left")) "left")
+    ("k" (elfeed-search-set-filter (ndu/view-tag "+news")) "news")
+    ("l" (elfeed-search-set-filter (ndu/view-tag "+foreign")) "foreign")
+    ("b" (elfeed-search-set-filter (ndu/view-tag "+opinion")) "opinion")
+    ("n" (elfeed-search-set-filter (ndu/view-tag "+tech")) "tech"))
+  (ndu/set-hooks '((elfeed-search-mode-hook (olivetti-mode))
                    (elfeed-show-mode-hook (olivetti-mode))
                    (eww-mode-hook (olivetti-mode))
                    (eww-mode-hook (writeroom-mode))))
   (add-hook 'eww-after-render-hook 'eww-readable))
-(defun ndu-save-recompile () (interactive) (save-buffer) (recompile))
-(defun ndu-set-leader (package binds)
+(defun ndu/save-recompile () (interactive) (save-buffer) (recompile))
+(defun ndu/set-leader (package binds)
   (mapc (lambda (x)
           (spacemacs/set-leader-keys (car x) (cadr x)))
         binds))
-(defun ndu-chronos ()
+(defun ndu/chronos ()
   (setq-default chronos-shell-notify-program "xterm"
                 chronos-shell-notify-parameters
                 '("-e" "tput bel; sleep 2; tput bel; sleep 2; tput bel;
                         sleep 2")
                 chronos-expiry-functions #'(chronos-shell-notify
                                             chronos-message-notify)))
-(defun ndu-set-hooks (dat)
+(defun ndu/set-hooks (dat)
   (mapc (lambda (x)
           (mapc (lambda (y)
                   (add-hook (car x) y))
                 (cadr x)))
         dat))
-(defun ndu-set-keys (dat global)
+(defun ndu/set-keys (dat global)
   (mapc (lambda (x)
           (let ((key (kbd (car x)))
                 (key-function (eval (cadr x))))
@@ -79,27 +109,27 @@
             (funcall (if global #'global-set-key #'local-set-key)
                      key key-function)))
         dat))
-(defun ndu-indent-relative-below ()
+(defun ndu/indent-relative-below ()
   (interactive)
   "Indent relative, but works for the line below rather than above"
-  (defun ndu-move-line-down ()
+  (defun ndu/move-line-down ()
     (let ((col (current-column)))
       (save-excursion
         (forward-line)
         (transpose-lines 1))
       (forward-line)
       (move-to-column col)))
-  (defun ndu-move-line-up ()
+  (defun ndu/move-line-up ()
     (let ((col (current-column)))
       (save-excursion
         (forward-line)
         (transpose-lines -1))
       (forward-line -2)
       (move-to-column col)))
-  (ndu-move-line-down)
+  (ndu/move-line-down)
   (indent-relative)
-  (ndu-move-line-up))
-(defun ndu-org-mode ()
+  (ndu/move-line-up))
+(defun ndu/org-mode ()
   (defun org-summary-todo (n-done n-not-done)
     "Switch entry to DONE when all subentries are done, to TODO otherwise."
     (let (org-log-done org-log-states)   ; turn off logging
@@ -112,14 +142,14 @@
                     org-level-4
                     org-level-5))
       (set-face-attribute face nil :weight 'regular :height 1.0))
-    (ndu-set-hooks '((org-mode-hook (turn-on-org-cdlatex))
+    (ndu/set-hooks '((org-mode-hook (turn-on-org-cdlatex))
                      (org-mode-hook (auto-complete-mode))
                      (org-mode-hook (olivetti-mode))
                      (org-mode-hook (writeroom-mode))
                      (org-mode-hook
                       ((lambda ()
-                         (push '("[ ]" .  "🞎") prettify-symbols-alist)
-                         (push '("[X]" . "🗷" ) prettify-symbols-alist)
+                         (push '("[ ]" .  "☐") prettify-symbols-alist)
+                         (push '("[X]" . "☑" ) prettify-symbols-alist)
                          (push '("-" . "—" ) prettify-symbols-alist)
                          (push '("::" . "⁚" ) prettify-symbols-alist)
                          (prettify-symbols-mode))))
@@ -162,7 +192,7 @@
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (org-copy-face 'org-todo 'org-checkbox-statistics-todo
                  "Face used for unfinished checkbox statistics."))
-(defun ndu-latex ()
+(defun ndu/latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
                             '("IEEEeqnarray*" "alignment")))
@@ -170,7 +200,7 @@
   ;; http://tex.aspcode.net/view/635399273629833626123752/auctex-how-to-enable-auto-expansion-of-sub-and-superscript-in-custom-math-environment
   ;; note: support for this environment is only partial if auctex sees
   ;; the 'usepackage' macro for it - need following code for full support
-  (ndu-set-hooks '((LaTeX-mode-hook ((lambda () (setq evil-shift-width 2))
+  (ndu/set-hooks '((LaTeX-mode-hook ((lambda () (setq evil-shift-width 2))
                                      add-envs))
                    (LaTeX-mode-hook (olivetti-mode))
                    (LaTeX-mode-hook (writeroom-mode))))
@@ -185,28 +215,28 @@
     texmathp-tex-commands '(("IEEEeqnarray" env-on) ("IEEEeqnarray*" env-on))
     ;; auto-expand sub/superscript
     TeX-electric-sub-and-superscript t))
-(defun ndu-ansi-color ()
+(defun ndu/ansi-color ()
   "Ansi colors in compilation mode"
   (defun colorize-compilation-buffer ()
     (toggle-read-only)
     (ansi-color-apply-on-region (point-min) (point-max))
     (toggle-read-only))
   (add-hook 'compilation-filter-hook 'colorize-compilation-buffer))
-(defun ndu-doxymacs ()
+(defun ndu/doxymacs ()
   ;(mapc #'load '("~/.emacs.d/manuallyinstalled/xml-parse.el"
   ;              "~/.emacs.d/manuallyinstalled/doxymacs.el"))
-  (ndu-set-keys '(("C-'"   #'doxymacs-insert-function-comment)
+  (ndu/set-keys '(("C-'"   #'doxymacs-insert-function-comment)
                   ("C-\""  #'doxymacs-insert-file-comment))
                 nil))
-(defun ndu-taskjuggler ()
+(defun ndu/taskjuggler ()
    (load "~/.emacs.d/manuallyInstalled/taskjuggler-mode.el"))
-(defun ndu-clojure ()
+(defun ndu/clojure ()
   (setq-default clojure-enable-fancify-symbols t))
-(defun ndu-emacs-lisp ()
+(defun ndu/emacs-lisp ()
   (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode)
   (add-hook 'emacs-lisp-mode-hook (olivetti-mode)))
-(defun ndu-c-mode () ;;helm-gtags-mode
-  (ndu-set-hooks '((c-mode-hook (doxymacs-mode
+(defun ndu/c-mode () ;;helm-gtags-mode
+  (ndu/set-hooks '((c-mode-hook (doxymacs-mode
                                  (lambda ()
                                    (setq evil-shift-width 4)
                                    ; (ggtags-mode 1)
@@ -227,7 +257,7 @@
     ;; List of configuration layers to load. If it is the symbol `all' instead
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
-    '(html ivy org git pdf
+    '(html osx org git pdf
       (shell :variables shell-default-shell 'ansi-term)
       (auto-completion
        :variables spacemacs-default-company-backends '(company-files
@@ -254,6 +284,7 @@
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(chronos ansi-color anki-editor
+                                       org-drill adaptive-wrap
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
                                        wordnut adaptive-wrap matlab-mode
@@ -271,6 +302,8 @@
    before layers configuration.
    You should not put any user code in there besides modifying the variable
    values."
+  (add-to-list 'default-frame-alist '(background-color . "#FFFFF0"))
+  (set-background-color "#FFFFF0")
   ;; This setq-default sexp is an exhaustive list of all the supported
   ;; spacemacs settings.
   (setq-default
@@ -296,13 +329,13 @@
     ;; List of themes, the first of the list is loaded when spacemacs starts.
     ;; Press <SPC> T n to cycle to the next theme in the list (works great
     ;; with 2 themes variants, one dark and one light)
-    dotspacemacs-themes '(tsdh-light)
+    dotspacemacs-themes '(default)
     ;; If non nil the cursor color matches the state color.
     dotspacemacs-colorize-cursor-according-to-state t
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
-    dotspacemacs-default-font '("Source Code Pro Light"
-                                :size 30
+    dotspacemacs-default-font '("Source Code Pro"
+                                :size 28
                                 :weight light
                                 :width normal
                                 :powerline-scale 1.1)
@@ -435,13 +468,13 @@
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (use-package nov
-    :mode ("\\.epub\\'" . ndu-nov-mode))
+    :mode ("\\.epub\\'" . ndu/nov-mode))
   (global-visual-line-mode t)
   ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
-  (ndu-set-leader 'chronos
+  (ndu/set-leader 'chronos
                   '(("on" chronos-add-timers-from-string)
                     ("om" chronos-delete-all-expired)))
-  (ndu-set-leader 'anki-editor
+  (ndu/set-leader 'anki-editor
                   '(("oa" anki-editor-cloze-dwim)
                     ("os" anki-editor-cloze-region)
                     ("ol" anki-editor-latex-region)
@@ -462,12 +495,15 @@
    (imagemagick-register-types))
   ;(add-to-list 'mu4e-headers-actions
   ; '("View in browser" . mu4e-action-view-in-browser) t)
+  (advice-add 'play-sound :around 'my/play-sound)
+  ; (load "~/.emacs.d/manuallyInstalled/ed-mode.el")
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
     spacemacs-yank-indent-threshold 0
+    pixel-scroll-precision-mode t
     flycheck-python-pycompile-executable "python3"
     python-shell-interpreter "python3"
     auto-save-default t
@@ -482,17 +518,18 @@
     c-basic-offset 4
     org-hide-emphasis-markers t
     whitespace-line-column 80                    ; After 79 chars,
-    whitespace-style '(face lines-tail)          ; highlight columns.
+    whitespace-style '(face);'(face lines-tail)          ; highlight columns.
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
     flycheck-indication-mode 'left-fringe
     evil-use-y-for-yank t
+    helm-full-frame t
     c-c++-lsp-enable-semantic-highlight t)
-  (ndu-set-keys '(("C->"  #'indent-relative)
-                  ("C-<"  #'ndu-indent-relative-below)
-                  ("C-\'" #'ndu-save-recompile))
+  (ndu/set-keys '(("C->"  #'indent-relative)
+                  ("C-<"  #'ndu/indent-relative-below)
+                  ("C-\'" #'ndu/save-recompile))
                 t)
-  (ndu-set-hooks '((python-mode-hook (olivetti-mode))
+  (ndu/set-hooks '((python-mode-hook (olivetti-mode))
                    (c-mode-hook (olivetti-mode))
                    (emacs-lisp-mode-hook (olivetti-mode))
                    (sh-mode-hook (olivetti-mode))
@@ -500,21 +537,25 @@
                    (c++-mode-hook (lsp))
                    (term-mode-hook (olivetti-mode))
                    (term-mode-hook (writeroom-mode))))
-  (load "~/.emacs.d/manuallyInstalled/ed-mode.el")
+  (global-visual-line-mode t)
+  ;; Adaptive wrap anyways needs the `visual-line-mode' to be enabled. So
+  ;; enable it only when the latter is enabled.
+  (add-hook 'visual-line-mode-hook #'adaptive-wrap-prefix-mode)
+  (global-set-key (kbd "M-q") 'ndu/fill-paragraph)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            global-flycheck-mode
            ; global-auto-complete-mode
-           ndu-chronos
-           ndu-org-mode
-           ndu-latex
-           ndu-ansi-color
-           ndu-doxymacs
-           ndu-taskjuggler
-           ndu-clojure
-           ndu-emacs-lisp
-           ndu-c-mode
-           ndu-elfeed-mode))
-  (find-file "~/org/gtd.org"))
+           ndu/chronos
+           ndu/org-mode
+           ndu/latex
+           ndu/ansi-color
+           ndu/doxymacs
+           ; ndu/taskjuggler
+           ndu/clojure
+           ndu/emacs-lisp
+           ndu/c-mode
+           ndu/elfeed-mode))
+  (find-file "~/org/ucat.org"))
