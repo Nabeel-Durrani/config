@@ -1,7 +1,7 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
-; https://github.com/tkf/org-mode/blob/master/lisp/org-faces.el
+
 ; https://abizjak.github.io/emacs/2016/03/06/latex-fill-paragraph.html
 (defun ndu/fill-paragraph (&optional P)
   "When called with prefix argument call `fill-paragraph'.
@@ -57,7 +57,6 @@ Otherwise split the current paragraph into one sentence per line."
              do (eww-browse-url it))
     (mapc #'elfeed-search-update-entry entries)
     (unless (use-region-p) (forward-line))))
-
 (defun ndu/nov-mode ()
   (archive-mode)
   (nov-mode)
@@ -87,13 +86,6 @@ Otherwise split the current paragraph into one sentence per line."
   (mapc (lambda (x)
           (spacemacs/set-leader-keys (car x) (cadr x)))
         binds))
-(defun ndu/chronos ()
-  (setq-default chronos-shell-notify-program "xterm"
-                chronos-shell-notify-parameters
-                '("-e" "tput bel; sleep 2; tput bel; sleep 2; tput bel;
-                        sleep 2")
-                chronos-expiry-functions #'(chronos-shell-notify
-                                            chronos-message-notify)))
 (defun ndu/set-hooks (dat)
   (mapc (lambda (x)
           (mapc (lambda (y)
@@ -146,6 +138,7 @@ Otherwise split the current paragraph into one sentence per line."
                      (org-mode-hook (auto-complete-mode))
                      (org-mode-hook (olivetti-mode))
                      (org-mode-hook (writeroom-mode))
+                     (org-mode-hook (anki-editor-mode))
                      (org-mode-hook
                       ((lambda ()
                          (push '("[ ]" .  "☐") prettify-symbols-alist)
@@ -156,8 +149,11 @@ Otherwise split the current paragraph into one sentence per line."
                      (org-after-todo-statistics-hook (org-summary-todo))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes")
-             "- %?" :prepend t)))
+          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes") "- %?" :prepend t)
+            ("a" "anki-low" plain (file+headline "~/org/anki.org" "Priority Low") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_1\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)
+            ("s" "anki-medium" plain (file+headline "~/org/anki.org" "Priority Medium") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_2\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)
+            ("d" "anki-high" plain (file+headline "~/org/anki.org" "Priority High") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_3\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)
+            ("f" "anki-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_4\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)))
     (setq-default
      org-emphasis-alist '(("*" bold)
                           ("/" italic)
@@ -283,7 +279,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; wrapped in a layer. If you need some configuration for these
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
-    dotspacemacs-additional-packages '(chronos ansi-color anki-editor
+    dotspacemacs-additional-packages '(ansi-color anki-editor
                                        org-drill adaptive-wrap
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
@@ -461,9 +457,43 @@ Otherwise split the current paragraph into one sentence per line."
    layers configuration. You are free to put any user code. "
   ;(with-eval-after-load 'company
   ; (add-to-list 'company-backends '(company-capf company-dabbrev)))
+  ; https://yiufung.net/post/anki-org/
+  (use-package anki-editor
+      :after org
+      :bind (:map org-mode-map
+                  ("<f12>" . anki-editor-cloze-region-auto-incr)
+                  ("<f11>" . anki-editor-cloze-region-dont-incr)
+                  ("<f10>" . anki-editor-reset-cloze-number)
+                  ("<f9>"  . anki-editor-push-tree))
+      :hook (org-capture-after-finalize . anki-editor-reset-cloze-number) ; Reset cloze-number after each capture.
+      :config
+      (setq anki-editor-create-decks t ;; Allow anki-editor to create a new deck if it doesn't exist
+            anki-editor-org-tags-as-anki-tags t)
+      (defun anki-editor-cloze-region-auto-incr (&optional arg)
+        "Cloze region without hint and increase card number."
+        (interactive)
+        (anki-editor-cloze-region my-anki-editor-cloze-number "")
+        (setq my-anki-editor-cloze-number (1+ my-anki-editor-cloze-number))
+        (forward-sexp))
+      (defun anki-editor-cloze-region-dont-incr (&optional arg)
+        "Cloze region without hint using the previous card number."
+        (interactive)
+        (anki-editor-cloze-region (1- my-anki-editor-cloze-number) "")
+        (forward-sexp))
+      (defun anki-editor-reset-cloze-number (&optional arg)
+        "Reset cloze number to ARG or 1"
+        (interactive)
+        (setq my-anki-editor-cloze-number (or arg 1)))
+      (defun anki-editor-push-tree ()
+        (interactive)
+        ;(anki-editor-push-notes '(4)) ; would push all notes under a tree
+        (anki-editor-push-notes)
+        (anki-editor-reset-cloze-number))
+      ;; Initialize
+      (anki-editor-reset-cloze-number))
   (mapc (lambda (x)
           (add-to-list (car x) (cadr x)))
-        '((load-path "/usr/share/wordnet")
+        '((load-path "/opt/homebrew/bin")
           (evil-emacs-state-modes wordnut-mode)))
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
@@ -471,14 +501,11 @@ Otherwise split the current paragraph into one sentence per line."
     :mode ("\\.epub\\'" . ndu/nov-mode))
   (global-visual-line-mode t)
   ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
-  (ndu/set-leader 'chronos
-                  '(("on" chronos-add-timers-from-string)
-                    ("om" chronos-delete-all-expired)))
   (ndu/set-leader 'anki-editor
                   '(("oa" anki-editor-cloze-dwim)
-                    ("os" anki-editor-cloze-region)
+                    ("os" anki-editor-cloze-region-auto-incr)
                     ("ol" anki-editor-latex-region)
-                    ("op" anki-editor-push-notes)
+                    ("op" anki-editor-push-tree)
                     ("oo" anki-editor-retry-failure-notes)
                     ("oi" anki-editor-insert-note)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
@@ -512,6 +539,7 @@ Otherwise split the current paragraph into one sentence per line."
     olivetti-style 'fancy
     olivetti-body-width 86
     writeroom-width 86
+    org-use-property-inheritance t
     olivetti-margin-width 5
     nov-text-width 60
     c-default-style "k&r"
@@ -548,7 +576,6 @@ Otherwise split the current paragraph into one sentence per line."
            global-whitespace-mode
            global-flycheck-mode
            ; global-auto-complete-mode
-           ndu/chronos
            ndu/org-mode
            ndu/latex
            ndu/ansi-color
