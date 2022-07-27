@@ -121,6 +121,12 @@ Otherwise split the current paragraph into one sentence per line."
   (ndu/move-line-down)
   (indent-relative)
   (ndu/move-line-up))
+(defun ndu/buffer-backlinks ()
+  (interactive)
+  (rg (buffer-name) "*.org" org-directory))
+(defun ndu/entry-backlinks ()
+  (interactive)
+  (rg (org-entry-get nil "ID") "*.org" org-directory))
 (defun ndu/org-mode ()
   (defun org-summary-todo (n-done n-not-done)
     "Switch entry to DONE when all subentries are done, to TODO otherwise."
@@ -279,7 +285,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; wrapped in a layer. If you need some configuration for these
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
-    dotspacemacs-additional-packages '(ansi-color anki-editor
+    dotspacemacs-additional-packages '(ansi-color anki-editor rg
                                        org-drill adaptive-wrap
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
@@ -502,7 +508,9 @@ Otherwise split the current paragraph into one sentence per line."
   (global-visual-line-mode t)
   ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu/set-leader 'anki-editor
-                  '(("oa" anki-editor-cloze-dwim)
+                  '(("oz" ndu/buffer-backlinks)
+                    ("oz" ndu/entry-backlinks)
+                    ("oa" anki-editor-cloze-dwim)
                     ("os" anki-editor-cloze-region-auto-incr)
                     ("ol" anki-editor-latex-region)
                     ("op" anki-editor-push-tree)
@@ -542,6 +550,8 @@ Otherwise split the current paragraph into one sentence per line."
     org-use-property-inheritance t
     olivetti-margin-width 5
     nov-text-width 60
+    org-id-link-to-org-use-id 'create-if-interactive
+    org-adapt-indentation t
     c-default-style "k&r"
     c-basic-offset 4
     org-hide-emphasis-markers t
