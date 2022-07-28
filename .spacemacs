@@ -1,30 +1,78 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
-(defun anki-editor-cloze-region-auto-incr (&optional arg)
+;; https://stackoverflow.com/questions/17435995/paste-an-image-on-clipboard-to-emacs-org-mode-file-without-saving-it
+(defun ndu/open-externally()
+ (interactive)
+ (shell-command
+     (format (concat "open " (browse-url-url-at-point)))))
+(defun ndu/org-screenshot-anki ()
+  "Take a screenshot into a time stamped unique-named file in the
+same directory as the org-buffer and insert a link to this file."
+  (interactive)
+  (setq filename-short
+        (concat (make-temp-name (format-time-string "%Y%m%d%H%M%S")) ".png"))
+  (setq filename (concat "anki_imgs/" filename-short))
+  (unless (file-exists-p (file-name-directory filename))
+    (make-directory (file-name-directory filename)))
+  ; take screenshot
+  (if (eq system-type 'darwin)
+      (call-process "screencapture" nil nil nil "-i" filename))
+  (if (eq system-type 'gnu/linux)
+      (call-process "import" nil nil nil filename))
+  ; insert into file if correctly taken
+  (setq spaces (make-string (current-column) ?\s))
+  (if (file-exists-p filename)
+      (insert (concat "#+BEGIN_EXPORT html\n"
+                      spaces filename-short "\n"
+                      spaces "#+END_EXPORT\n"
+                      spaces "[[file:" filename "]]"))))
+(defun ndu/org-screenshot ()
+  "Take a screenshot into a time stamped unique-named file in the
+same directory as the org-buffer and insert a link to this file."
+  (interactive)
+  (setq filename
+        (concat
+         (make-temp-name
+          (concat (file-name-nondirectory
+                   ; capture buffer has buffer name null
+                   (if (buffer-file-name) (buffer-file-name) "misc"))
+                  "_imgs/"
+                  (format-time-string "%Y%m%d_%H%M%S_")) ) ".png"))
+  (unless (file-exists-p (file-name-directory filename))
+    (make-directory (file-name-directory filename)))
+  ; take screenshot
+  (if (eq system-type 'darwin)
+      (call-process "screencapture" nil nil nil "-i" filename))
+  (if (eq system-type 'gnu/linux)
+      (call-process "import" nil nil nil filename))
+  ; insert into file if correctly taken
+  (if (file-exists-p filename)
+    (insert (concat "[[file:" filename "]]"))))
+(defun ndu/cloze-region-auto-incr (&optional arg)
   "Cloze region without hint and increase card number."
   (require 'anki-editor)
   (interactive)
   (anki-editor-cloze-region my-anki-editor-cloze-number "")
   (setq my-anki-editor-cloze-number (1+ my-anki-editor-cloze-number))
   (forward-sexp))
-(defun anki-editor-cloze-region-dont-incr (&optional arg)
+(defun ndu/cloze-region-dont-incr (&optional arg)
   "Cloze region without hint using the previous card number."
   (require 'anki-editor)
   (interactive)
   (anki-editor-cloze-region (1- my-anki-editor-cloze-number) "")
   (forward-sexp))
-(defun anki-editor-reset-cloze-number (&optional arg)
+(defun ndu/reset-cloze-number (&optional arg)
   "Reset cloze number to ARG or 1"
   (require 'anki-editor)
   (interactive)
   (setq my-anki-editor-cloze-number (or arg 1)))
-(defun anki-editor-push-tree ()
+(defun ndu/push-notes ()
   (require 'anki-editor)
   (interactive)
   ;(anki-editor-push-notes '(4)) ; would push all notes under a tree
   (anki-editor-push-notes)
-  (anki-editor-reset-cloze-number))
+  (ndu/reset-cloze-number))
 ; https://abizjak.github.io/emacs/2016/03/06/latex-fill-paragraph.html
 (defun ndu/fill-paragraph (&optional P)
   "When called with prefix argument call `fill-paragraph'.
@@ -151,6 +199,12 @@ Otherwise split the current paragraph into one sentence per line."
   (interactive)
   (rg (org-entry-get nil "ID") "*.org" org-directory))
 (defun ndu/org-mode ()
+  (add-hook 'org-mode-hook
+   '(lambda ()
+     (delete '("\\.pdf\\'" . default) org-file-apps)
+     (delete '("\\.png\\'" . default) org-file-apps)
+     (add-to-list 'org-file-apps '("\\.pdf\\'" . "open %s"))
+     (add-to-list 'org-file-apps '("\\.png\\'" . "open %s"))))
   (defun org-summary-todo (n-done n-not-done)
     "Switch entry to DONE when all subentries are done, to TODO otherwise."
     (let (org-log-done org-log-states)   ; turn off logging
@@ -181,7 +235,11 @@ Otherwise split the current paragraph into one sentence per line."
             ("a" "anki-low" plain (file+headline "~/org/anki.org" "Priority Low") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
             ("s" "anki-medium" plain (file+headline "~/org/anki.org" "Priority Medium") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
             ("d" "anki-high" plain (file+headline "~/org/anki.org" "Priority High") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
-            ("f" "anki-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)))
+            ("f" "anki-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
+            ("z" "anki-occlusion-low" plain (file+headline "~/org/anki.org" "Priority Low") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)
+            ("x" "anki-occlusion-medium" plain (file+headline "~/org/anki.org" "Priority Medium") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)
+            ("c" "anki-occlusion-high" plain (file+headline "~/org/anki.org" "Priority High") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)
+            ("v" "anki-occlusion-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)))
     (setq-default
      org-emphasis-alist '(("*" bold)
                           ("/" italic)
@@ -489,17 +547,17 @@ Otherwise split the current paragraph into one sentence per line."
   (use-package anki-editor
       :after org
       :bind (:map org-mode-map
-                  ("<f12>" . anki-editor-cloze-region-auto-incr)
-                  ("<f11>" . anki-editor-cloze-region-dont-incr)
-                  ("<f10>" . anki-editor-reset-cloze-number)
-                  ("<f9>"  . anki-editor-push-tree))
-      :hook (org-capture-after-finalize . anki-editor-reset-cloze-number) ; Reset cloze-number after each capture.
+                  ("<f12>" . ndu/cloze-region-auto-incr)
+                  ("<f11>" . ndu/cloze-region-dont-incr)
+                  ("<f10>" . ndu/reset-cloze-number)
+                  ("<f9>"  . ndu/push-notes))
+      :hook (org-capture-after-finalize . ndu/reset-cloze-number) ; Reset cloze-number after each capture.
       :config
       ; Allow anki-editor to create a new deck if it doesn't exist
       (setq anki-editor-create-decks t
             anki-editor-org-tags-as-anki-tags t)
       ;; Initialize
-      (anki-editor-reset-cloze-number))
+      (ndu/reset-cloze-number))
   (mapc (lambda (x)
           (add-to-list (car x) (cadr x)))
         '((load-path "/opt/homebrew/bin")
@@ -512,13 +570,17 @@ Otherwise split the current paragraph into one sentence per line."
   ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu/set-leader 'anki-editor
                   '(("oz" ndu/buffer-backlinks)
-                    ("oz" ndu/entry-backlinks)
-                    ("oa" anki-editor-cloze-dwim)
-                    ("os" anki-editor-cloze-region-auto-incr)
+                    ("ox" ndu/entry-backlinks)
+                    ("oc" ndu/open-externally)
+                    ("ov" ndu/org-screenshot-anki)
+                    ("oj" ndu/push-notes)
+                    ("ok" ndu/cloze-region-dont-incr)
                     ("ol" anki-editor-latex-region)
-                    ("op" anki-editor-push-tree)
-                    ("oo" anki-editor-retry-failure-notes)
-                    ("oi" anki-editor-insert-note)))
+                    ("oi" ndu/cloze-region-auto-incr)
+                    ("oo" org-capture)
+                    ("op" ndu/org-screenshot)
+                    ("oq" anki-editor-retry-failure-notes)
+                    ("os" anki-editor-insert-note)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
