@@ -1,13 +1,12 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
-;; https://stackoverflow.com/questions/17435995/paste-an-image-on-clipboard-to-emacs-org-mode-file-without-saving-it
 (defun ndu/open-externally()
  (interactive)
- (shell-command
-     (format (concat "open " (browse-url-url-at-point)))))
+ (shell-command (format (concat "open " (browse-url-url-at-point)))))
+;; https://stackoverflow.com/questions/17435995/paste-an-image-on-clipboard-to-emacs-org-mode-file-without-saving-it
 (defun ndu/org-screenshot-anki ()
-  "Take a screenshot into a time stamped unique-named file in the
+ "Take a screenshot into a time stamped unique-named file in the
 same directory as the org-buffer and insert a link to this file."
   (interactive)
   (setq filename-short
@@ -21,24 +20,26 @@ same directory as the org-buffer and insert a link to this file."
   (if (eq system-type 'gnu/linux)
       (call-process "import" nil nil nil filename))
   ; insert into file if correctly taken
-  (setq spaces (make-string (current-column) ?\s))
+  (setq spaces (make-string (+ (current-column) 1) ?\s))
   (if (file-exists-p filename)
-      (insert (concat "#+BEGIN_EXPORT html\n"
-                      spaces filename-short "\n"
-                      spaces "#+END_EXPORT\n"
-                      spaces "[[file:" filename "]]"))))
+      (insert (concat " #+NAME: " filename-short "\n"
+                       spaces "#+CAPTION: "
+                       (format-time-string "%F" (current-time)) "\n"
+                       spaces "#+ATTR_ORG: :width 400\n"
+                       spaces "[[file:" filename "]]")))
+  (org-display-inline-images))
+;; https://stackoverflow.com/questions/17435995/paste-an-image-on-clipboard-to-emacs-org-mode-file-without-saving-it
 (defun ndu/org-screenshot ()
-  "Take a screenshot into a time stamped unique-named file in the
-same directory as the org-buffer and insert a link to this file."
+  "Take a screenshot into a time stamped unique-named file in the same directory as the org-buffer and insert a link to this file."
   (interactive)
+  (setq filename-short
+        (concat (make-temp-name (format-time-string "%Y%m%d%H%M%S")) ".png"))
   (setq filename
-        (concat
-         (make-temp-name
-          (concat (file-name-nondirectory
-                   ; capture buffer has buffer name null
-                   (if (buffer-file-name) (buffer-file-name) "misc"))
-                  "_imgs/"
-                  (format-time-string "%Y%m%d_%H%M%S_")) ) ".png"))
+        ;; note: capture buffer has buffer name null
+        (concat (file-name-nondirectory (if (buffer-file-name)
+                                            (buffer-file-name) "misc"))
+                "_imgs/"
+                filename-short))
   (unless (file-exists-p (file-name-directory filename))
     (make-directory (file-name-directory filename)))
   ; take screenshot
@@ -46,9 +47,16 @@ same directory as the org-buffer and insert a link to this file."
       (call-process "screencapture" nil nil nil "-i" filename))
   (if (eq system-type 'gnu/linux)
       (call-process "import" nil nil nil filename))
+
+  (setq spaces (make-string (+ (current-column) 1) ?\s))
   ; insert into file if correctly taken
   (if (file-exists-p filename)
-    (insert (concat "[[file:" filename "]]"))))
+      (insert (concat " #+NAME: " filename-short "\n"
+                       spaces "#+CAPTION: "
+                       (format-time-string "%F" (current-time)) "\n"
+                       spaces "#+ATTR_ORG: :width 400\n"
+                       spaces "[[file:" filename "]]")))
+  (org-display-inline-images))
 (defun ndu/cloze-region-auto-incr (&optional arg)
   "Cloze region without hint and increase card number."
   (require 'anki-editor)
@@ -80,10 +88,10 @@ Otherwise split the current paragraph into one sentence per line."
   (interactive "P")
   (if (not P)
       (save-excursion
-        (let ((fill-column 12345678)) ;; relies on dynamic binding
-          (fill-paragraph) ;; this will not work correctly if the paragraph is
-                           ;; longer than 12345678 characters (in which case the
-                           ;; file must be at least 12MB long. This is unlikely.)
+        (let ((fill-column 12345678)) ; relies on dynamic binding
+          (fill-paragraph) ; this will not work correctly if the paragraph is
+                           ; longer than 12345678 characters (in which case the
+                           ; file must be at least 12MB long. This is   unlikely.)
           (let ((end (save-excursion
                        (forward-paragraph 1)
                        (backward-sentence)
@@ -91,13 +99,12 @@ Otherwise split the current paragraph into one sentence per line."
             (beginning-of-line)
             (while (progn (forward-sentence)
                           (<= (point) (marker-position end)))
-              (just-one-space) ;; leaves only one space, point is after it
-              (delete-char -1) ;; delete the space
+              (just-one-space) ; leaves only one space, point is after it
+              (delete-char -1) ; delete the space
               ;; and insert a newline
               (newline)
               (indent-relative)))))
-    (fill-paragraph P))) ;; otherwise do ordinary fill paragraph
-; https://emacs.stackexchange.com/questions/67956/trying-to-set-org-clock-sound-for-org-timer
+    (fill-paragraph P))) ; otherwise do ordinary fill paragraph
 (defun my/play-sound (orgin-fn sound)
   (cl-destructuring-bind (_ _ file) sound
     (make-process :name (concat "play-sound-" file)
@@ -138,8 +145,7 @@ Otherwise split the current paragraph into one sentence per line."
 (defun ndu/elfeed-mode ()
   (require 'elfeed)
   (define-key elfeed-search-mode-map (kbd "m") 'ndu/eww-open)
-  (defhydra ap/elfeed-search-view (elfeed-search-mode-map "d" :color blue)
-                                        ; press d + (h, j, etc)
+  (defhydra ap/elfeed-search-view (elfeed-search-mode-map "d" :color blue) ; press d + (h, j, etc)
     "Set elfeed-search filter tags."
     ("h" (elfeed-search-set-filter nil) "Default")
     ("j" (elfeed-search-set-filter (ndu/view-tag "+left")) "left")
@@ -231,15 +237,40 @@ Otherwise split the current paragraph into one sentence per line."
                      (org-after-todo-statistics-hook (org-summary-todo))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes") "  * %?" :prepend t)
-            ("a" "anki-low" plain (file+headline "~/org/anki.org" "Priority Low") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
-            ("s" "anki-medium" plain (file+headline "~/org/anki.org" "Priority Medium") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
-            ("d" "anki-high" plain (file+headline "~/org/anki.org" "Priority High") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
-            ("f" "anki-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
-            ("z" "anki-occlusion-low" plain (file+headline "~/org/anki.org" "Priority Low") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)
-            ("x" "anki-occlusion-medium" plain (file+headline "~/org/anki.org" "Priority Medium") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)
-            ("c" "anki-occlusion-high" plain (file+headline "~/org/anki.org" "Priority High") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)
-            ("v" "anki-occlusion-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      " :prepend t)))
+          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes")
+             "  * %?" :prepend t)
+            ("a" "anki-low" plain
+             (file+headline "~/org/anki.org" "Priority Low")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
+             :prepend t)
+            ("s" "anki-medium" plain
+             (file+headline "~/org/anki.org" "Priority Medium")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
+             :prepend t)
+            ("d" "anki-high" plain
+             (file+headline "~/org/anki.org" "Priority High")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
+             :prepend t)
+            ("f" "anki-highest" plain
+             (file+headline "~/org/anki.org" "Priority Highest")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
+             :prepend t)
+            ("z" "anki-occlusion-low" plain
+             (file+headline "~/org/anki.org" "Priority Low")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             :prepend t)
+            ("x" "anki-occlusion-medium" plain
+             (file+headline "~/org/anki.org" "Priority Medium")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             :prepend t)
+            ("c" "anki-occlusion-high" plain
+             (file+headline "~/org/anki.org" "Priority High")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             :prepend t)
+            ("v" "anki-occlusion-highest" plain
+             (file+headline "~/org/anki.org" "Priority Highest")
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             :prepend t)))
     (setq-default
      org-emphasis-alist '(("*" bold)
                           ("/" italic)
@@ -315,8 +346,7 @@ Otherwise split the current paragraph into one sentence per line."
 (defun ndu/clojure ()
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu/emacs-lisp ()
-  (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode)
-  (add-hook 'emacs-lisp-mode-hook (olivetti-mode)))
+  (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode))
 (defun ndu/c-mode () ;;helm-gtags-mode
   (ndu/set-hooks '((c-mode-hook (doxymacs-mode
                                  (lambda ()
@@ -369,7 +399,7 @@ Otherwise split the current paragraph into one sentence per line."
                                        org-drill adaptive-wrap
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
-                                       wordnut adaptive-wrap matlab-mode
+                                       wordnut matlab-mode
                                        nov olivetti hydra lsp-mode lsp-ui
                                        ccls)
     ;; A list of packages and/or extensions that will not be install and loaded
@@ -566,7 +596,6 @@ Otherwise split the current paragraph into one sentence per line."
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (use-package nov
     :mode ("\\.epub\\'" . ndu/nov-mode))
-  (global-visual-line-mode t)
   ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu/set-leader 'anki-editor
                   '(("oz" ndu/buffer-backlinks)
@@ -621,8 +650,10 @@ Otherwise split the current paragraph into one sentence per line."
     c-default-style "k&r"
     c-basic-offset 4
     org-hide-emphasis-markers t
-    whitespace-line-column 80                    ; After 79 chars,
-    whitespace-style '(face);'(face lines-tail)          ; highlight columns.
+    org-startup-with-inline-images t
+    org-image-actual-width nil
+    whitespace-line-column 80                     ; After 79 chars,
+    whitespace-style '(face) ;'(face lines-tail) ; highlight columns.
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
     flycheck-indication-mode 'left-fringe
