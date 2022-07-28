@@ -177,11 +177,11 @@ Otherwise split the current paragraph into one sentence per line."
                      (org-after-todo-statistics-hook (org-summary-todo))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes") "- %?" :prepend t)
-            ("a" "anki-low" plain (file+headline "~/org/anki.org" "Priority Low") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_1\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)
-            ("s" "anki-medium" plain (file+headline "~/org/anki.org" "Priority Medium") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_2\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)
-            ("d" "anki-high" plain (file+headline "~/org/anki.org" "Priority High") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_3\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)
-            ("f" "anki-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "** Note %T\n   :PROPERTIES:\n   :ANKI_NOTE_TYPE: tts_cloze\n   :ANKI_DECK: main\n   :ANKI_TAGS: priority_4\n   :END:\n*** text\n   %?\n*** index\n   %<%s>\n*** extra\n   " :prepend t)))
+          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes") "  * %?" :prepend t)
+            ("a" "anki-low" plain (file+headline "~/org/anki.org" "Priority Low") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
+            ("s" "anki-medium" plain (file+headline "~/org/anki.org" "Priority Medium") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
+            ("d" "anki-high" plain (file+headline "~/org/anki.org" "Priority High") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)
+            ("f" "anki-highest" plain (file+headline "~/org/anki.org" "Priority Highest") "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      " :prepend t)))
     (setq-default
      org-emphasis-alist '(("*" bold)
                           ("/" italic)
@@ -555,6 +555,7 @@ Otherwise split the current paragraph into one sentence per line."
     nov-text-width 60
     org-id-link-to-org-use-id 'create-if-interactive
     org-adapt-indentation t
+    org-odd-levels-only t
     c-default-style "k&r"
     c-basic-offset 4
     org-hide-emphasis-markers t
@@ -579,6 +580,8 @@ Otherwise split the current paragraph into one sentence per line."
                    (term-mode-hook (olivetti-mode))
                    (term-mode-hook (writeroom-mode))))
   (global-visual-line-mode t)
+  (evil-define-minor-mode-key 'motion 'visual-line-mode "$" 'evil-end-of-visual-line)
+  (evil-define-minor-mode-key 'motion 'visual-line-mode "^" 'evil-first-non-blank-of-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "j" 'evil-next-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "k" 'evil-previous-visual-line)
   ;; Adaptive wrap anyways needs the `visual-line-mode' to be enabled. So
@@ -600,4 +603,4 @@ Otherwise split the current paragraph into one sentence per line."
            ndu/emacs-lisp
            ndu/c-mode
            ndu/elfeed-mode))
-  (find-file "~/org/gtd.org"))
+  (find-file "~/org/ucat.org"))
