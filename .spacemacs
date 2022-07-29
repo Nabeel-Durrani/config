@@ -2,13 +2,17 @@
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
 ; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
-;; subtract 1: don't incl. root entry
-(defun ndu/insert-progress ()
+(defun ndu/insert-progress-buffer ()
   (interactive)
-  (setq complete      (length (org-map-entries t "/+DONE" 'tree))
-        incomplete (- (length (org-map-entries t "/+TODO" 'tree)) 1)
+  (org-map-entries 'ndu/insert-progress-tree "/-TODO-DONE"))
+(defun ndu/insert-progress-tree ()
+  (interactive)
+  (setq complete   (length (org-map-entries t "/+DONE" 'tree))
+        incomplete (length (org-map-entries t "/+TODO" 'tree))
         total      (+ complete incomplete)
-        progress   (* (/ complete total) 100))
+        progress   (if (> total 0)
+                       (* (/ complete total) 100)
+                       0))
   (org-entry-put (point) "COMPLETE" (format "%d / %d" complete total))
   (org-entry-put (point) "PROGRESS" (format "%d%%" progress)))
 (defun ndu/convert-cloze ()
@@ -639,7 +643,8 @@ Otherwise split the current paragraph into one sentence per line."
                     ("ox" ndu/entry-backlinks)
                     ("oc" ndu/open-externally)
                     ("om" ndu/convert-cloze)
-                    ("on" ndu/insert-progress)
+                    ("on" ndu/insert-progress-tree)
+                    ("ob" ndu/insert-progress-buffer)
                     ("ov" ndu/org-screenshot-anki)
                     ("oj" ndu/push-notes)
                     ("ok" ndu/cloze-region-dont-incr)
