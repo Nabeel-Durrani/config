@@ -1,6 +1,49 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
+(defun ndu/convert-cloze ()
+  "Convert an org-drill Cloze card to one compatible with anki-editor."
+  (require 'anki-editor)
+  (require 'org-drill)
+  (interactive)
+  (atomic-change-group
+    (org-with-point-at (point)
+      (org-back-to-heading)
+      (org-narrow-to-subtree)
+      (save-excursion
+        (let* ((cloze-count 1)
+               (beginning-marker (make-marker))
+               (end-marker (make-marker))
+               cloze-beginning)
+          (save-excursion
+            (while (re-search-forward org-drill-cloze-regexp nil t)
+              (let ((hint (match-string-no-properties 2)))
+                (unless (string-blank-p hint)
+                  ;; Strip leading hint separator
+                  (setq hint (substring hint
+                                        (length org-drill-hint-separator)
+                                        (length hint)))
+                  ;; Delete hint (with separator)
+                  (delete-region (match-beginning 2)
+                                 (match-end 2))
+                  ;; Move before matched region and retry.
+                  (goto-char (match-beginning 0))
+                  (forward-char -1)
+                  (re-search-forward org-drill-cloze-regexp))
+                (setq cloze-beginning
+                      (+ (match-beginning 0)
+                         (length org-drill-left-cloze-delimiter)))
+                (set-marker beginning-marker cloze-beginning)
+                (set-marker end-marker (match-end 2))
+                (delete-region (match-beginning 3) (match-end 3))
+                (delete-region (match-beginning 0) cloze-beginning)
+                (anki-editor-cloze
+                 (marker-position beginning-marker)
+                 (marker-position end-marker)
+                 cloze-count
+                 hint)
+                (setq cloze-count (+ 1 cloze-count))))))))))
 (defun ndu/open-externally()
  (interactive)
  (shell-command (format (concat "open " (browse-url-url-at-point)))))
@@ -586,6 +629,7 @@ Otherwise split the current paragraph into one sentence per line."
                   '(("oz" ndu/buffer-backlinks)
                     ("ox" ndu/entry-backlinks)
                     ("oc" ndu/open-externally)
+                    ("om" ndu/convert-cloze)
                     ("ov" ndu/org-screenshot-anki)
                     ("oj" ndu/push-notes)
                     ("ok" ndu/cloze-region-dont-incr)
@@ -643,6 +687,7 @@ Otherwise split the current paragraph into one sentence per line."
     flycheck-highlighting-mode 'symbols
     flycheck-indication-mode 'left-fringe
     evil-use-y-for-yank t
+    org-use-property-inheritance t
     helm-full-frame t
     c-c++-lsp-enable-semantic-highlight t)
   (ndu/set-keys '(("C->"  #'indent-relative)
