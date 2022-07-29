@@ -2,6 +2,15 @@
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
 ; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
+;; subtract 1: don't incl. root entry
+(defun ndu/insert-progress ()
+  (interactive)
+  (setq complete      (length (org-map-entries t "/+DONE" 'tree))
+        incomplete (- (length (org-map-entries t "/+TODO" 'tree)) 1)
+        total      (+ complete incomplete)
+        progress   (* (/ complete total) 100))
+  (org-entry-put (point) "COMPLETE" (format "%d / %d" complete total))
+  (org-entry-put (point) "PROGRESS" (format "%d%%" progress)))
 (defun ndu/convert-cloze ()
   "Convert an org-drill Cloze card to one compatible with anki-editor."
   (require 'anki-editor)
@@ -630,6 +639,7 @@ Otherwise split the current paragraph into one sentence per line."
                     ("ox" ndu/entry-backlinks)
                     ("oc" ndu/open-externally)
                     ("om" ndu/convert-cloze)
+                    ("on" ndu/insert-progress)
                     ("ov" ndu/org-screenshot-anki)
                     ("oj" ndu/push-notes)
                     ("ok" ndu/cloze-region-dont-incr)
