@@ -492,9 +492,9 @@ Otherwise split the current paragraph into one sentence per line."
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
     dotspacemacs-default-font '("Iosevka" ; Good unicode support (monospaced)
-                                :size 32
+                                :size 28
                                 :weight thin
-                                :width normal
+                                :width expanded
                                 :powerline-scale 1.1)
     ;; The leader key
     dotspacemacs-leader-key "SPC"
