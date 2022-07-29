@@ -684,6 +684,7 @@ Otherwise split the current paragraph into one sentence per line."
     flycheck-python-pycompile-executable "python3"
     python-shell-interpreter "python3"
     auto-save-default t
+    adaptive-wrap-extra-indent 1
     visual-fill-column-center-text t
     vterm-always-compile-module t
     olivetti-style 'fancy
@@ -694,7 +695,7 @@ Otherwise split the current paragraph into one sentence per line."
     nov-text-width 60
     org-id-link-to-org-use-id 'create-if-interactive
     org-adapt-indentation t
-    org-odd-levels-only t
+    ; org-odd-levels-only t
     c-default-style "k&r"
     c-basic-offset 4
     org-hide-emphasis-markers t
