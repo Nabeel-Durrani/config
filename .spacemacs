@@ -1,7 +1,6 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
-; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
 (defun ndu/insert-progress-buffer ()
   (interactive)
   (org-map-entries 'ndu/insert-progress-tree "/-TODO-DONE"))
@@ -15,6 +14,7 @@
                        0))
   (org-entry-put (point) "COMPLETE" (format "%d / %d" complete total))
   (org-entry-put (point) "PROGRESS" (format "%d%%" progress)))
+; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
 (defun ndu/convert-cloze ()
   "Convert an org-drill Cloze card to one compatible with anki-editor."
   (require 'anki-editor)
@@ -322,27 +322,31 @@ Otherwise split the current paragraph into one sentence per line."
      org-superstar-item-bullet-alist '((?* . ?↠) (?+ . ?⇝) (?- . ?→))
      org-superstar-headline-bullets-list '("■" "◆" "•" "◉" "○" "▶")
      org-checkbox-hierarchical-statistics nil
-      ;; disable confirm message when evaluating stuff for org-babel
-      ;org-confirm-babel-evaluate nil
-      ;; org-capture
-      ;;http://orgmode.org/manual/Setting-up-capture.html
-      ;; If you would like a TODO entry to automatically change to DONE when all
+     ;; disable confirm message when evaluating stuff for org-babel
+     ;org-confirm-babel-evaluate nil
+     ;; org-capture
+     ;; http://orgmode.org/manual/Setting-up-capture.html
+     ;; If you would like a TODO entry to automatically change to DONE when all
       ;; children are done, you can use the following setup.
-      ;; (http://orgmode.org/manual/Breaking-down-tasks.html)
+     ;; (http://orgmode.org/manual/Breaking-down-tasks.html)
       org-log-done 'time
       org-todo-keyword-faces '(("TODO" . (:foreground "purple4" :weight bold))
                                ("DONE" . (:foreground "purple1" :weight bold)))
       org-directory "~/org"
       org-agenda-files '("~/org/gtd.org")
+      org-drill-add-random-noise-to-intervals-p t
+      org-drill-adjust-intervals-for-early-and-late-repetitions-p t
       ;; MobileOrg iphone app
       ;; http://mobileorg.ncogni.to/doc/getting-started/using-dropbox/
       ;; Set to the location of your Org files on your local system
       ;; Set to the name of the file where new notes will be stored
-      ;org-mobile-inbox-for-pull "~/org/in.org"
-      ;org-mobile-directory "~/windoze/Dropbox/Apps/MobileOrg"
-      org-priority-faces '((?A . (:foreground "PaleVioletRed" :weight bold))
-                           (?B . (:foreground "orange"        :weight bold))
-                           (?C . (:foreground "green"         :weight bold)))))
+      ; org-mobile-inbox-for-pull "~/org/in.org"
+      ; org-mobile-directory "~/windoze/Dropbox/Apps/MobileOrg"
+      org-priority-faces '((?A . (:foreground "PaleVioletRed"    :weight bold))
+                           (?B . (:foreground "orange"           :weight bold))
+                           (?C . (:foreground "SeaGreen"         :weight bold))
+                           (?D . (:foreground "MediumSeaGreen"   :weight bold))
+                           (?E . (:foreground "MediumAquamarine" :weight bold)))))
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (org-copy-face 'org-todo 'org-checkbox-statistics-todo
                  "Face used for unfinished checkbox statistics."))
@@ -365,7 +369,7 @@ Otherwise split the current paragraph into one sentence per line."
                                     "IEEEeqnarray*")
     ;; reftex code to recognize this environment as an equation
     reftex-label-alist '(("IEEEeqnarray" ?e nil nil t)
-                         ("IEEEeqnarray*" ?e nil nil t))
+                          ("IEEEeqnarray*" ?e nil nil t))
     texmathp-tex-commands '(("IEEEeqnarray" env-on) ("IEEEeqnarray*" env-on))
     ;; auto-expand sub/superscript
     TeX-electric-sub-and-superscript t))
@@ -437,7 +441,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(ansi-color anki-editor rg
-                                       org-drill adaptive-wrap
+                                       org-drill adaptive-wrap all-the-icons
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
                                        wordnut matlab-mode
@@ -487,9 +491,9 @@ Otherwise split the current paragraph into one sentence per line."
     dotspacemacs-colorize-cursor-according-to-state t
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
-    dotspacemacs-default-font '("Source Code Pro"
-                                :size 28
-                                :weight light
+    dotspacemacs-default-font '("Iosevka" ; Good unicode support (monospaced)
+                                :size 32
+                                :weight thin
                                 :width normal
                                 :powerline-scale 1.1)
     ;; The leader key
@@ -714,9 +718,7 @@ Otherwise split the current paragraph into one sentence per line."
                    (emacs-lisp-mode-hook (olivetti-mode))
                    (sh-mode-hook (olivetti-mode))
                    (c++-mode-hook (olivetti-mode))
-                   (c++-mode-hook (lsp))
-                   (term-mode-hook (olivetti-mode))
-                   (term-mode-hook (writeroom-mode))))
+                   (c++-mode-hook (lsp))))
   (global-visual-line-mode t)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "$" 'evil-end-of-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "^" 'evil-first-non-blank-of-visual-line)
@@ -741,4 +743,5 @@ Otherwise split the current paragraph into one sentence per line."
            ndu/emacs-lisp
            ndu/c-mode
            ndu/elfeed-mode))
+  (custom-set-variables '(warning-suppress-types '((:warning))))
   (find-file "~/org/ucat.org"))
