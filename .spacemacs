@@ -589,11 +589,12 @@ Otherwise split the current paragraph into one sentence per line."
     dotspacemacs-smooth-scrolling t
     ;; If non-nil smartparens-strict-mode will be enabled in programming modes.
     ;; (default nil)
-    dotspacemacs-smartparens-strict-mode t
+    dotspacemacs-smartparens-strict-mode nil
     ;; Select a scope to highlight delimiters. Possible values are `any',
     ;; `current', `all' or `nil'. Default is `all' (highlight any scope and
     ;; emphasis the current one). (default 'all)
     dotspacemacs-highlight-delimiters 'all
+    dotspacemacs-enable-server t
     ;; If non nil advises quit functions to keep server open when quitting.
     ;; (default nil)
     dotspacemacs-persistent-server nil
@@ -767,4 +768,5 @@ Otherwise split the current paragraph into one sentence per line."
            ndu/c-mode
            ndu/elfeed-mode))
   (custom-set-variables '(warning-suppress-types '((:warning))))
-  (find-file "~/org/ucat.org"))
+  (eshell)
+  (find-file "~/org/gtd.org"))
