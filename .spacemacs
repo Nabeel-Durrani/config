@@ -441,7 +441,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(ansi-color anki-editor rg
-                                       org-drill adaptive-wrap all-the-icons
+                                       org-drill adaptive-wrap
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
                                        wordnut matlab-mode
@@ -491,7 +491,7 @@ Otherwise split the current paragraph into one sentence per line."
     dotspacemacs-colorize-cursor-according-to-state t
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
-    dotspacemacs-default-font '("Iosevka" ; Good unicode support (monospaced)
+    dotspacemacs-default-font '("Iosevka Fixed" ; Good unicode support (monospaced)
                                 :size 28
                                 :weight thin
                                 :width expanded
@@ -684,7 +684,6 @@ Otherwise split the current paragraph into one sentence per line."
     flycheck-python-pycompile-executable "python3"
     python-shell-interpreter "python3"
     auto-save-default t
-    adaptive-wrap-extra-indent 1
     visual-fill-column-center-text t
     vterm-always-compile-module t
     olivetti-style 'fancy
