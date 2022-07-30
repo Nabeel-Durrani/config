@@ -64,6 +64,14 @@
  (require 'org-drill)
  (interactive)
  (org-drill nil (ndu/get-item-match)))
+(defun ndu/org-cram-topic ()
+ (require 'org-drill)
+ (interactive)
+ (org-drill-cram nil (ndu/get-topic-match)))
+(defun ndu/org-cram-item ()
+ (require 'org-drill)
+ (interactive)
+ (org-drill-cram nil (ndu/get-item-match)))
 (defun ndu/org-drill-todo ()
   (require 'org-drill)
   (interactive)
@@ -80,6 +88,14 @@
   (require 'org-drill)
   (interactive)
   (org-drill 'tree (ndu/get-item-match)))
+(defun ndu/org-cram-topic-tree ()
+  (require 'org-drill)
+  (interactive)
+  (org-drill-cram 'tree (ndu/get-topic-match)))
+(defun ndu/org-cram-item-tree ()
+  (require 'org-drill)
+  (interactive)
+  (org-drill-cram 'tree (ndu/get-item-match)))
 (defun ndu/org-cram-todo ()
   (require 'org-drill)
   (interactive)
@@ -100,8 +116,10 @@
                        (* (/ complete (float total)) 100)
                        0))
   (org-entry-put (point) "COMPLETE" (format "%d / %d" complete total))
-  (org-entry-put (point) "PROGRESS" (format "%d%%" progress)))
-; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
+  (org-entry-put (point) "PROGRESS" (format "%d%%" progress))
+  (org-entry-put (point)
+                 "LAST-UPDATE" (format-time-string "%Y-%m-%d-%H:%M:%S")))
+;; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
 (defun ndu/convert-cloze ()
   "Convert an org-drill Cloze card to one compatible with anki-editor."
   (require 'anki-editor)
@@ -423,6 +441,7 @@ Otherwise split the current paragraph into one sentence per line."
       org-agenda-files '("~/org/gtd.org")
       org-drill-add-random-noise-to-intervals-p t
       org-drill-adjust-intervals-for-early-and-late-repetitions-p t
+      org-drill-scope 'directory
       ;; MobileOrg iphone app
       ;; http://mobileorg.ncogni.to/doc/getting-started/using-dropbox/
       ;; Set to the location of your Org files on your local system
@@ -730,35 +749,26 @@ Otherwise split the current paragraph into one sentence per line."
   (use-package nov
     :mode ("\\.epub\\'" . ndu/nov-mode))
   ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
-  (ndu/set-leader 'anki-editor
-                  '(("on" ndu/insert-topic)
-                    ("om" ndu/insert-item)
-                    ("oz" ndu/buffer-backlinks)
-                    ("ox" ndu/entry-backlinks)
-                    ("oc" ndu/open-externally)
-                    ("ov" ndu/convert-cloze)
-                    ("oq" ndu/org-drill-todo)
-                    ("ow" ndu/org-cram-todo)
-                    ("oe" ndu/org-drill-todo-tree)
-                    ("or" ndu/org-cram-todo-tree)
-                    ("oh" ndu/org-drill-topic)
-                    ("oj" ndu/org-drill-item)
-                    ("ok" ndu/org-drill-topic-tree)
-                    ("ol" ndu/org-drill-item-tree)
-                    ("oa" ndu/org-drill)
-                    ("os" ndu/org-cram)
-                    ("od" ndu/org-drill-tree)
-                    ("of" ndu/org-cram-tree)
-                    ("oz" ndu/cloze-region-auto-incr)
-                    ("ox" ndu/cloze-region-dont-incr)
-                    ("oc" anki-editor-latex-region)
-                    ("ot" ndu/insert-progress-tree)
-                    ("og" ndu/org-screenshot-anki)
-                    ("ob" ndu/insert-progress-buffer)
-                    ("ou" anki-editor-retry-failure-notes)
-                    ("oi" ndu/push-notes)
-                    ("oo" org-capture)
-                    ("op" ndu/org-screenshot-regular)))
+  (ndu/set-leader
+    'anki-editor
+    '(("on" ndu/insert-topic)                ("om" ndu/insert-item)
+      ("oz" ndu/buffer-backlinks)            ("ox" ndu/entry-backlinks)
+      ("oc" ndu/open-externally)             ("ov" ndu/convert-cloze)
+      ("oq" ndu/org-drill-todo)              ("ow" ndu/org-cram-todo)
+      ("oe" ndu/org-drill-todo-tree)         ("or" ndu/org-cram-todo-tree)
+      ("oh" ndu/org-drill-topic)             ("oj" ndu/org-drill-item)
+      ("ok" ndu/org-drill-topic-tree)        ("ol" ndu/org-drill-item-tree)
+      ("oH" ndu/org-cram-topic)              ("oJ" ndu/org-cram-item)
+      ("oK" ndu/org-cram-topic-tree)         ("oL" ndu/org-cram-item-tree)
+      ("oa" ndu/org-drill)                   ("os" ndu/org-cram)
+      ("od" ndu/org-drill-tree)              ("of" ndu/org-cram-tree)
+      ("oz" ndu/cloze-region-auto-incr)      ("ox" ndu/cloze-region-dont-incr)
+      ("oc" anki-editor-latex-region)        ("ot" ndu/insert-progress-tree)
+      ("og" ndu/org-screenshot-anki)         ("ob" ndu/insert-progress-buffer)
+      ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
+      ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
+      ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
+      ("o-TAB" org-global-cycle)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
