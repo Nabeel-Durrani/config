@@ -779,8 +779,8 @@ Otherwise split the current paragraph into one sentence per line."
       ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
       ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
       ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
-      ("o[" org-global-cycle)                ("o]" outline-show-branches)
-      ("o\\" org-reveal)                     ("o|" org-hide-entry)
+      ("o[" outline-cycle-buffer)            ("o]" outline-show-branches)
+      ("o\\" outline-show-all)               ("o|" outline-hide-other)
       ("o;" org-drill-resume)                ("o'" org-drill-again)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
