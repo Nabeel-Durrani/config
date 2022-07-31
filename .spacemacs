@@ -780,6 +780,7 @@ Otherwise split the current paragraph into one sentence per line."
       ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
       ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
       ("o[" org-global-cycle)                ("o]" outline-show-branches)
+      ("o\\" org-reveal)                     ("o|" org-hide-entry)
       ("o;" org-drill-resume)                ("o'" org-drill-again)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
