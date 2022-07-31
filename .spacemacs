@@ -1,6 +1,8 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu/insert-topic-item-capture (type)
+  (concat "** " type (format-time-string "-%Y-%m-%d-%H:%M:%S")))
 (defun ndu/insert-item ()
   (interactive)
   (org-insert-heading)
@@ -383,8 +385,16 @@ Otherwise split the current paragraph into one sentence per line."
                      (org-after-todo-statistics-hook (org-summary-todo))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("n" "note" plain (file+headline "~/org/gtd.org" "Notes")
+          `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
              "  * %?" :prepend t)
+            ("w" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
+                        "** TODO %?" :prepend t)
+            ("e" "topic" plain (file+headline "~/org/gtd.org" "Inbox")
+             "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
+             :prepend t)
+            ("r" "item" plain (file+headline "~/org/gtd.org" "Inbox")
+             "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
+             :prepend t)
             ("a" "anki-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
@@ -769,7 +779,7 @@ Otherwise split the current paragraph into one sentence per line."
       ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
       ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
       ("o[" org-global-cycle)                ("o]" outline-show-branches)
-      ("o;" org-tree-to-indirect-buffer)     ("o'" org-timer-set-timer)))
+      ("o;" org-drill-resume)                ("o'" org-drill-again)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
