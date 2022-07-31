@@ -451,7 +451,9 @@ Otherwise split the current paragraph into one sentence per line."
       org-agenda-files '("~/org/gtd.org")
       org-drill-add-random-noise-to-intervals-p t
       org-drill-spaced-repetition-algorithm 'sm2
-      org-drill-leech-method nil ; for reading text
+      org-drill-leech-method nil             ; for reading text
+      org-drill-forgetting-index 100         ; for reading text
+      org-drill-leech-failure-threshold nil  ; for reading text
       org-drill-scope 'directory
       ;; MobileOrg iphone app
       ;; http://mobileorg.ncogni.to/doc/getting-started/using-dropbox/
