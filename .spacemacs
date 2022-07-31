@@ -450,7 +450,7 @@ Otherwise split the current paragraph into one sentence per line."
       org-directory "~/org"
       org-agenda-files '("~/org/gtd.org")
       org-drill-add-random-noise-to-intervals-p t
-      org-drill-adjust-intervals-for-early-and-late-repetitions-p t
+      org-drill-spaced-repetition-algorithm 'sm2
       org-drill-scope 'directory
       ;; MobileOrg iphone app
       ;; http://mobileorg.ncogni.to/doc/getting-started/using-dropbox/
@@ -832,6 +832,7 @@ Otherwise split the current paragraph into one sentence per line."
     org-highest-priority ?A
     org-lowest-priority  ?E
     org-default-priority org-lowest-priority
+    git-magit-status-fullscreen t
     helm-full-frame t
     c-c++-lsp-enable-semantic-highlight t)
   (ndu/set-keys '(("C->"  #'indent-relative)
