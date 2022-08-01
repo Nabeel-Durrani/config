@@ -11,8 +11,7 @@
 (defun ndu/insert-topic-item-capture (type)
   (concat "** " type (format-time-string "-%Y-%m-%d-%H:%M:%S")))
 (defun ndu/insert-link-capture ()
- (concat "** " (read-from-minibuffer "Description: ") "\n"
-         "   :PROPERTIES:\n"
+ (concat "   :PROPERTIES:\n"
          "   :URL: %?\n"
          "   :URL-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
          "   :END:"))
@@ -23,6 +22,9 @@
   (org-insert-heading)
   (setq spaces (make-string (current-column) ?\s))
   (insert description)
+  (org-set-tags "link")
+  (move-end-of-line 1)
+  (insert " ")
   (newline-and-indent)
   (insert (concat        ":PROPERTIES:\n"
                   spaces ":URL: " url "\n"
@@ -419,7 +421,7 @@ Otherwise split the current paragraph into one sentence per line."
           `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
              "  * %?" :prepend t)
             ("w" "link" plain (file+headline "~/org/gtd.org" "Links")
-              "%(ndu/insert-link-capture)"
+             "** %(read-from-minibuffer \"Description: \")%(org-set-tags \"link\")\n%(ndu/insert-link-capture)"
              :prepend t)
             ("e" "topic" plain (file+headline "~/org/gtd.org" "Inbox")
              "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
