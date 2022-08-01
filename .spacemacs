@@ -10,6 +10,24 @@
   (cdr (assoc pri pri-map)))
 (defun ndu/insert-topic-item-capture (type)
   (concat "** " type (format-time-string "-%Y-%m-%d-%H:%M:%S")))
+(defun ndu/insert-link-capture ()
+ (concat "** " (read-from-minibuffer "Description: ") "\n"
+         "   :PROPERTIES:\n"
+         "   :URL: %?\n"
+         "   :URL-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+         "   :END:"))
+(defun ndu/insert-link ()
+  (interactive)
+  (setq description (read-from-minibuffer "Description: ")
+        url         (read-from-minibuffer "URL: "))
+  (org-insert-heading)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert description)
+  (newline-and-indent)
+  (insert (concat        ":PROPERTIES:\n"
+                  spaces ":URL: " url "\n"
+                  spaces ":URL-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+                  spaces ":END:\n")))
 (defun ndu/insert-item ()
   (interactive)
   (org-insert-heading)
@@ -400,14 +418,17 @@ Otherwise split the current paragraph into one sentence per line."
 		(setq org-capture-templates
           `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
              "  * %?" :prepend t)
-            ("w" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
-                        "** TODO %?" :prepend t)
+            ("w" "link" plain (file+headline "~/org/gtd.org" "Links")
+              "%(ndu/insert-link-capture)"
+             :prepend t)
             ("e" "topic" plain (file+headline "~/org/gtd.org" "Inbox")
              "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
              :prepend t)
             ("r" "item" plain (file+headline "~/org/gtd.org" "Inbox")
              "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
              :prepend t)
+            ("t" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
+                        "** TODO %?" :prepend t)
             ("a" "anki-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
