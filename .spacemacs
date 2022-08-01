@@ -456,7 +456,7 @@ Otherwise split the current paragraph into one sentence per line."
       org-todo-keyword-faces '(("TODO" . (:foreground "purple4" :weight bold))
                                ("DONE" . (:foreground "purple1" :weight bold)))
       org-directory "~/org"
-      org-agenda-files '("~/org/gtd.org")
+      org-agenda-files '("~/org")
       org-drill-add-random-noise-to-intervals-p t
       org-drill-spaced-repetition-algorithm 'sm2
       org-drill-leech-method nil             ; for reading text
@@ -883,4 +883,4 @@ Otherwise split the current paragraph into one sentence per line."
            ndu/elfeed-mode))
   (custom-set-variables '(warning-suppress-types '((:warning))))
   (eshell)
-  (find-file "~/org/ucat.org"))
+  (find-file "~/org/gtd.org"))
