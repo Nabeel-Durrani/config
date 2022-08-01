@@ -819,7 +819,10 @@ Otherwise split the current paragraph into one sentence per line."
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  outline-show-all)               ("o}" outline-hide-body)
-      ("o;"  org-drill-resume)               ("o'" org-drill-again)))
+      ("o;"  org-drill-resume)               ("o:" org-drill-again)
+      ("o'"  ndu/insert-link)                ("o/" org-agenda)
+      ("o<" org-move-subtree-down)           ("o>" org-move-subtree-up)
+      ("o," org-move-item-down)              ("o." org-move-item-up)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
