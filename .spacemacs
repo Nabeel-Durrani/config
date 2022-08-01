@@ -561,7 +561,7 @@ Otherwise split the current paragraph into one sentence per line."
       ;(shell :variables shell-enable-smart-Eshell t)
       ;(elfeed :variables elfeed-enable-web-interface t)
       (elfeed :variables elfeed-enable-goodies nil)
-      (elfeed :variables rmh-elfeed-org-files (list "~/org/feeds.org"))
+      (elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
 	    (spell-checking :variables spell-checking-enable-by-default nil))
     ; List of additional packages that will be installed without being
     ;; wrapped in a layer. If you need some configuration for these
@@ -789,8 +789,9 @@ Otherwise split the current paragraph into one sentence per line."
       ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
       ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
       ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
-      ("o[" outline-cycle-buffer)            ("o]" outline-show-branches)
-      ("o\\" outline-show-all)               ("o|" outline-hide-other)
+      ("o\\" outline-cycle-buffer)           ("o|" org-insert-property-drawer)
+      ("o[" outline-hide-other)              ("o]" outline-toggle-children)
+      ("o{" outline-show-all)                ("o}" outline-hide-body)
       ("o;" org-drill-resume)                ("o'" org-drill-again)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
