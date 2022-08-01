@@ -1,6 +1,13 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu/priority (pri)
+  (setq pri-map '(("A" . "\"A\"")
+                  ("B" . "\"A\"\|PRIORITY=\"B\"")
+                  ("C" . "\"A\"\|PRIORITY=\"B\"\|PRIORITY=\"C\"")
+                  ("D" . "\"A\"\|PRIORITY=\"B\"\|PRIORITY=\"C\"\|PRIORITY=\"D\"")
+                  ("E" . "\"A\"\|PRIORITY=\"B\"\|PRIORITY=\"C\"\|PRIORITY=\"D\"\|PRIORITY=\"E\"")))
+  (cdr (assoc pri pri-map)))
 (defun ndu/insert-topic-item-capture (type)
   (concat "** " type (format-time-string "-%Y-%m-%d-%H:%M:%S")))
 (defun ndu/insert-item ()
@@ -15,7 +22,7 @@
   (org-set-tags "drill:topic"))
 (defun ndu/get-tag-priority-match ()
   (setq priority (read-from-minibuffer "Priority (A-E):")
-        pri      (concat "+PRIORITY=" "\"" priority "\"")
+        pri      (concat "+PRIORITY=" (ndu/priority priority))
         tag      (read-from-minibuffer "+tag_1...+tag_N: ")
         pri-tag  (concat pri tag)
         pri-pred (if (member priority '("A" "B" "C" "D" "E")) t nil)
@@ -28,16 +35,14 @@
 (defun ndu/get-item-match ()
   (setq input    (read-from-minibuffer "Priority (A-E):")
         priority (if (member input '("A" "B" "C" "D" "E"))
-                     (concat "+PRIORITY="
-                             "\"" input "\"")
+                     (concat "+PRIORITY=" (ndu/priority input))
                      "")
         todo     "+item")
   (concat todo priority))
 (defun ndu/get-topic-match ()
   (setq input    (read-from-minibuffer "Priority (A-E):")
         priority (if (member input '("A" "B" "C" "D" "E"))
-                     (concat "+PRIORITY="
-                             "\"" input "\"")
+                     (concat "+PRIORITY=" (ndu/priority input))
                      "")
         todo     "+topic")
   (concat todo priority))
@@ -405,15 +410,15 @@ Otherwise split the current paragraph into one sentence per line."
              :prepend t)
             ("a" "anki-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
              :prepend t)
             ("s" "anki-medium" plain
              (file+headline "~/org/anki.org" "Priority Medium")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
              :prepend t)
             ("d" "anki-high" plain
              (file+headline "~/org/anki.org" "Priority High")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
              :prepend t)
             ("f" "anki-highest" plain
              (file+headline "~/org/anki.org" "Priority Highest")
@@ -421,15 +426,15 @@ Otherwise split the current paragraph into one sentence per line."
              :prepend t)
             ("z" "anki-occlusion-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
              :prepend t)
             ("x" "anki-occlusion-medium" plain
              (file+headline "~/org/anki.org" "Priority Medium")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
              :prepend t)
             ("c" "anki-occlusion-high" plain
              (file+headline "~/org/anki.org" "Priority High")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
              :prepend t)
             ("v" "anki-occlusion-highest" plain
              (file+headline "~/org/anki.org" "Priority Highest")
@@ -459,6 +464,7 @@ Otherwise split the current paragraph into one sentence per line."
       org-agenda-files '("~/org")
       org-drill-add-random-noise-to-intervals-p t
       org-drill-spaced-repetition-algorithm 'sm2
+      org-drill-hide-item-headings-p t       ; so priorities not clozed
       org-drill-leech-method nil             ; for reading text
       org-drill-forgetting-index 100         ; for reading text
       org-drill-leech-failure-threshold nil  ; for reading text
