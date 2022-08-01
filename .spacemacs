@@ -789,10 +789,10 @@ Otherwise split the current paragraph into one sentence per line."
       ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
       ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
       ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
-      ("o\\" outline-cycle-buffer)           ("o|" org-insert-property-drawer)
-      ("o[" outline-hide-other)              ("o]" outline-toggle-children)
-      ("o{" outline-show-all)                ("o}" outline-hide-body)
-      ("o;" org-drill-resume)                ("o'" org-drill-again)))
+      ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
+      ("o["  outline-hide-other)             ("o]" outline-show-subtree)
+      ("o{"  outline-show-all)               ("o}" outline-hide-body)
+      ("o;"  org-drill-resume)               ("o'" org-drill-again)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
