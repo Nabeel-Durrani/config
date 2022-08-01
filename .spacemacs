@@ -29,7 +29,7 @@
   (insert (concat        ":PROPERTIES:\n"
                   spaces ":URL: " url "\n"
                   spaces ":URL-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
-                  spaces ":END:\n")))
+                  spaces ":END:")))
 (defun ndu/insert-item ()
   (interactive)
   (org-insert-heading)
