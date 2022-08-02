@@ -4,6 +4,9 @@
 (defun ndu/outline-path ()
   (interactive)
   (string-join (org-get-outline-path t) "/"))
+(defun ndu/update-backlink-description ()
+  (interactive)
+  (org-set-property "BACKLINK-DESCRIPTION" (ndu/outline-path)))
 (defun ndu/priority (pri)
   (setq pri-map '(("A" . "\"A\"")
                   ("B" . "\"A\"\|PRIORITY=\"B\"")
@@ -810,7 +813,7 @@ Otherwise split the current paragraph into one sentence per line."
     'anki-editor
     '(("on" ndu/insert-topic)                ("om" ndu/insert-item)
       ("oz" ndu/buffer-backlinks)            ("ox" ndu/entry-backlinks)
-      ("oc" ndu/open-externally)             ("ov" ndu/convert-cloze)
+      ("oc" ndu/update-backlink-description) ("ov" ndu/convert-cloze)
       ("oq" ndu/org-drill-todo)              ("ow" ndu/org-cram-todo)
       ("oe" ndu/org-drill-todo-tree)         ("or" ndu/org-cram-todo-tree)
       ("oh" ndu/org-drill-topic)             ("oj" ndu/org-drill-item)
@@ -819,8 +822,8 @@ Otherwise split the current paragraph into one sentence per line."
       ("oK" ndu/org-cram-topic-tree)         ("oL" ndu/org-cram-item-tree)
       ("oa" ndu/org-drill)                   ("os" ndu/org-cram)
       ("od" ndu/org-drill-tree)              ("of" ndu/org-cram-tree)
-      ("oz" ndu/cloze-region-auto-incr)      ("ox" ndu/cloze-region-dont-incr)
-      ("oc" anki-editor-latex-region)        ("ot" ndu/insert-progress-tree)
+      ("o," ndu/cloze-region-auto-incr)      ("o." ndu/cloze-region-dont-incr)
+      ("o/" anki-editor-latex-region)        ("ot" ndu/insert-progress-tree)
       ("og" ndu/org-screenshot-anki)         ("ob" ndu/insert-progress-buffer)
       ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
       ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
@@ -828,10 +831,9 @@ Otherwise split the current paragraph into one sentence per line."
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  outline-show-all)               ("o}" outline-hide-body)
-      ("o;"  org-drill-resume)               ("o:" org-drill-again)
-      ("o'"  ndu/insert-link)                ("o/" org-agenda)
       ("o<" org-move-subtree-down)           ("o>" org-move-subtree-up)
-      ("o," org-move-item-down)              ("o." org-move-item-up)))
+      ("o;"  org-drill-resume)               ("o:" org-drill-again)
+      ("o'"  ndu/insert-link)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
