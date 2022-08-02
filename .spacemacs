@@ -1,6 +1,9 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu/set-startup-visibility ()
+  (interactive)
+  (org-set-startup-visibility))
 (defun ndu/outline-path ()
   (interactive)
   (string-join (org-get-outline-path t) "/"))
@@ -853,7 +856,7 @@ Otherwise split the current paragraph into one sentence per line."
       ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
-      ("o{"  outline-show-all)               ("o}" outline-hide-body)
+      ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
       ("o," ndu/related-insert)              ("o." ndu/related-append)
       ("o<"  org-drill-resume)               ("o>" org-drill-again)
       ("o'"  ndu/insert-link)))
