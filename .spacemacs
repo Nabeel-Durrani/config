@@ -22,6 +22,22 @@
          "   :BACKLINK-DESCRIPTION: org-capture\n"
          "   :LINK: %?\n"
          "   :END:"))
+(defun ndu/related-append ()
+  (interactive)
+  (move-end-of-line 1)
+  (newline-and-indent)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert (concat ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+                  spaces ":BACKLINK-DESCRIPTION: " (ndu/outline-path) "\n"
+                  spaces ":LINK: ")))
+(defun ndu/related-insert ()
+  (interactive)
+  (move-end-of-line 1)
+  (newline-and-indent)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert (concat ":RELATED:\n" spaces ":END:"))
+  (forward-line -1)
+  (ndu/related-append))
 (defun ndu/insert-link ()
   (interactive)
   (setq description          (read-from-minibuffer "Description: ")
@@ -831,8 +847,8 @@ Otherwise split the current paragraph into one sentence per line."
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  outline-show-all)               ("o}" outline-hide-body)
-      ("o<" org-move-subtree-down)           ("o>" org-move-subtree-up)
-      ("o;"  org-drill-resume)               ("o:" org-drill-again)
+      ("o," ndu/related-insert)              ("o." ndu/related-append)
+      ("o<"  org-drill-resume)               ("o>" org-drill-again)
       ("o'"  ndu/insert-link)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
@@ -924,6 +940,7 @@ Otherwise split the current paragraph into one sentence per line."
            ndu/emacs-lisp
            ndu/c-mode
            ndu/elfeed-mode))
+  ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
   (eshell)
   (find-file "~/org/gtd.org"))
