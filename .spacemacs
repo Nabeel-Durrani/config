@@ -901,6 +901,7 @@ Otherwise split the current paragraph into one sentence per line."
     c-basic-offset 4
     org-hide-emphasis-markers t
     org-startup-with-inline-images t
+    org-startup-folded 'showall
     org-image-actual-width nil ; images requre size attribute
     whitespace-line-column 80                     ; After 79 chars,
     whitespace-style '(face) ;'(face lines-tail) ; highlight columns.
