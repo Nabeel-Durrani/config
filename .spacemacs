@@ -6,6 +6,12 @@
   (string-join (org-get-outline-path t) "/"))
 (defun ndu/update-backlink-description ()
   (interactive)
+  (goto-char (point-min))
+  (while (re-search-forward ":BACKLINK-DESCRIPTION: " nil t)
+    (kill-line)
+    (insert (concat " " (ndu/outline-path)))))
+(defun ndu/insert-backlink-description ()
+  (interactive)
   (org-set-property "BACKLINK-DESCRIPTION" (ndu/outline-path)))
 (defun ndu/priority (pri)
   (setq pri-map '(("A" . "\"A\"")
@@ -15,10 +21,10 @@
                   ("E" . "\"A\"\|PRIORITY=\"B\"\|PRIORITY=\"C\"\|PRIORITY=\"D\"\|PRIORITY=\"E\"")))
   (cdr (assoc pri pri-map)))
 (defun ndu/insert-topic-item-capture (type)
-  (concat "** " type (format-time-string "-%Y-%m-%d-%H:%M:%S")))
+  (concat "** " type (format-time-string "-%Y-%m-%d-%H-%M-%S")))
 (defun ndu/insert-link-capture ()
  (concat "   :PROPERTIES:\n"
-         "   :LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+         "   :LINK-DATE: " (format-time-string "%Y-%m-%d-%H-%M-%S\n")
          "   :BACKLINK-DESCRIPTION: org-capture\n"
          "   :LINK: %?\n"
          "   :END:"))
@@ -27,7 +33,7 @@
   (move-end-of-line 1)
   (newline-and-indent)
   (setq spaces (make-string (current-column) ?\s))
-  (insert (concat ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+  (insert (concat ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H-%M-%S\n")
                   spaces ":BACKLINK-DESCRIPTION: " (ndu/outline-path) "\n"
                   spaces ":LINK: ")))
 (defun ndu/related-insert ()
@@ -50,19 +56,19 @@
   (insert " ")
   (newline-and-indent)
   (insert (concat        ":PROPERTIES:\n"
-                  spaces ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+                  spaces ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H-%M-%S\n")
                   spaces ":BACKLINK-DESCRIPTION: " (ndu/outline-path) "\n"
                   spaces ":LINK: " link "\n"
                   spaces ":END:")))
 (defun ndu/insert-item ()
   (interactive)
   (org-insert-heading)
-  (insert (format-time-string "I-%Y-%m-%d-%H:%M:%S"))
+  (insert (format-time-string "I-%Y-%m-%d-%H-%M-%S"))
   (org-set-tags "drill:item"))
 (defun ndu/insert-topic ()
   (interactive)
   (org-insert-heading)
-  (insert (format-time-string "T-%Y-%m-%d-%H:%M:%S"))
+  (insert (format-time-string "T-%Y-%m-%d-%H-%M-%S"))
   (org-set-tags "drill:topic"))
 (defun ndu/get-tag-priority-match ()
   (setq priority (read-from-minibuffer "Priority (A-E):")
@@ -176,7 +182,7 @@
   (org-entry-put (point) "COMPLETE" (format "%d / %d" complete total))
   (org-entry-put (point) "PROGRESS" (format "%d%%" progress))
   (org-entry-put (point)
-                 "LAST-UPDATE" (format-time-string "%Y-%m-%d-%H:%M:%S")))
+                 "LAST-UPDATE" (format-time-string "%Y-%m-%d-%H-%M-%S")))
 ;; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
 (defun ndu/convert-cloze ()
   "Convert an org-drill Cloze card to one compatible with anki-editor."
@@ -830,6 +836,7 @@ Otherwise split the current paragraph into one sentence per line."
     '(("on" ndu/insert-topic)                ("om" ndu/insert-item)
       ("oz" ndu/buffer-backlinks)            ("ox" ndu/entry-backlinks)
       ("oc" ndu/update-backlink-description) ("ov" ndu/convert-cloze)
+      ("oC" ndu/insert-backlink-description)
       ("oq" ndu/org-drill-todo)              ("ow" ndu/org-cram-todo)
       ("oe" ndu/org-drill-todo-tree)         ("or" ndu/org-cram-todo-tree)
       ("oh" ndu/org-drill-topic)             ("oj" ndu/org-drill-item)
