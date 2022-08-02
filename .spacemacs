@@ -1,6 +1,9 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu/outline-path ()
+  (interactive)
+  (string-join (org-get-outline-path t) "/"))
 (defun ndu/priority (pri)
   (setq pri-map '(("A" . "\"A\"")
                   ("B" . "\"A\"\|PRIORITY=\"B\"")
@@ -12,13 +15,14 @@
   (concat "** " type (format-time-string "-%Y-%m-%d-%H:%M:%S")))
 (defun ndu/insert-link-capture ()
  (concat "   :PROPERTIES:\n"
-         "   :LINK: %?\n"
          "   :LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+         "   :BACKLINK-DESCRIPTION: org-capture\n"
+         "   :LINK: %?\n"
          "   :END:"))
 (defun ndu/insert-link ()
   (interactive)
-  (setq description (read-from-minibuffer "Description: ")
-        url         (read-from-minibuffer "LINK: "))
+  (setq description          (read-from-minibuffer "Description: ")
+        link                 (read-from-minibuffer "Link: "))
   (org-insert-heading)
   (setq spaces (make-string (current-column) ?\s))
   (insert description)
@@ -27,8 +31,9 @@
   (insert " ")
   (newline-and-indent)
   (insert (concat        ":PROPERTIES:\n"
-                  spaces ":LINK: " url "\n"
                   spaces ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+                  spaces ":BACKLINK-DESCRIPTION: " (ndu/outline-path) "\n"
+                  spaces ":LINK: " link "\n"
                   spaces ":END:")))
 (defun ndu/insert-item ()
   (interactive)
@@ -380,7 +385,9 @@ Otherwise split the current paragraph into one sentence per line."
   (ndu/move-line-up))
 (defun ndu/buffer-backlinks ()
   (interactive)
-  (rg (buffer-name) "*.org" org-directory))
+  (rg (buffer-name)
+      "*.org"
+      org-directory))
 (defun ndu/entry-backlinks ()
   (interactive)
   (rg (org-entry-get nil "ID") "*.org" org-directory))
@@ -871,6 +878,7 @@ Otherwise split the current paragraph into one sentence per line."
     whitespace-style '(face) ;'(face lines-tail) ; highlight columns.
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
+    rg-command-line-flags '("--before-context=1")
     flycheck-indication-mode 'left-fringe
     evil-use-y-for-yank t
     org-use-property-inheritance t
