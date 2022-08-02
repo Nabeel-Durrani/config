@@ -12,13 +12,13 @@
   (concat "** " type (format-time-string "-%Y-%m-%d-%H:%M:%S")))
 (defun ndu/insert-link-capture ()
  (concat "   :PROPERTIES:\n"
-         "   :URL: %?\n"
-         "   :URL-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+         "   :LINK: %?\n"
+         "   :LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
          "   :END:"))
 (defun ndu/insert-link ()
   (interactive)
   (setq description (read-from-minibuffer "Description: ")
-        url         (read-from-minibuffer "URL: "))
+        url         (read-from-minibuffer "LINK: "))
   (org-insert-heading)
   (setq spaces (make-string (current-column) ?\s))
   (insert description)
@@ -27,8 +27,8 @@
   (insert " ")
   (newline-and-indent)
   (insert (concat        ":PROPERTIES:\n"
-                  spaces ":URL: " url "\n"
-                  spaces ":URL-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
+                  spaces ":LINK: " url "\n"
+                  spaces ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H:%M:%S\n")
                   spaces ":END:")))
 (defun ndu/insert-item ()
   (interactive)
@@ -449,19 +449,19 @@ Otherwise split the current paragraph into one sentence per line."
              :prepend t)
             ("z" "anki-occlusion-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
              :prepend t)
             ("x" "anki-occlusion-medium" plain
              (file+headline "~/org/anki.org" "Priority Medium")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
              :prepend t)
             ("c" "anki-occlusion-high" plain
              (file+headline "~/org/anki.org" "Priority High")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
              :prepend t)
             ("v" "anki-occlusion-highest" plain
              (file+headline "~/org/anki.org" "Priority Highest")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 occlusion\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
              :prepend t)))
     (setq-default
      org-emphasis-alist '(("*" bold)
