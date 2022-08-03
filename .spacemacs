@@ -234,10 +234,33 @@
  (shell-command (format (concat "open " (browse-url-url-at-point)))))
 (defun ndu/org-screenshot-anki ()
   (interactive)
-  (setq filename-short
-        (concat (make-temp-name (format-time-string "%Y%m%d%H%M%S")) ".png"))
-  (setq filename (concat "anki_imgs/" filename-short))
-  (ndu/org-screenshot filename-short filename))
+  (setq fname-no-extension (make-temp-name (format-time-string "%Y%m%d%H%M%S"))
+        filename-short (concat fname-no-extension ".png")
+        n-copies (- (string-to-number (read-from-minibuffer "# of images: "
+                                                            "1"))
+                    1)
+        save-dir "anki_imgs/"
+        filename (concat save-dir filename-short))
+  (org-insert-heading)
+  (insert "unoccluded")
+  (newline-and-indent)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert (concat "#+BEGIN_EXPORT html\n" spaces))
+  (ndu/org-screenshot filename-short filename t)
+  (insert (concat "\n" spaces "#+END_EXPORT\n"))
+  (dotimes (n n-copies)
+    (setq filename-copy-short (concat fname-no-extension "-"
+                                      (number-to-string (+ n 1)) ".png")
+          filename-copy (concat save-dir filename-copy-short))
+      (org-insert-heading)
+      (insert (concat "occlusion" (number-to-string (+ n 1))))
+      (newline-and-indent)
+      (setq spaces (make-string (current-column) ?\s))
+      (insert (concat "#+BEGIN_EXPORT html\n"
+                      spaces filename-copy-short "\n"
+                      spaces "#+END_EXPORT"))
+      (copy-file filename filename-copy)
+      (shell-command (format (concat "open -a krita " filename-copy)))))
 (defun ndu/org-screenshot-regular ()
   (interactive)
   (setq filename-short
@@ -248,10 +271,11 @@
                                             (buffer-file-name) "misc"))
                 "_imgs/"
                 filename-short))
+  (insert " ")
   (ndu/org-screenshot filename-short filename)
   (org-display-inline-images))
 ;; https://stackoverflow.com/questions/17435995/paste-an-image-on-clipboard-to-emacs-org-mode-file-without-saving-it
-(defun ndu/org-screenshot (filename-short filename)
+(defun ndu/org-screenshot (filename-short filename &optional anki)
   "Take a screenshot into a time stamped unique-named file in the same directory as the org-buffer and insert a link to this file."
   (interactive)
   (unless (file-exists-p (file-name-directory filename))
@@ -262,14 +286,15 @@
   (if (eq system-type 'gnu/linux)
       (call-process "import" nil nil nil filename))
 
-  (setq spaces (make-string (+ (current-column) 1) ?\s))
+  (setq spaces (make-string (current-column) ?\s))
   ; insert into file if correctly taken
   (if (file-exists-p filename)
-      (insert (concat " #+NAME: " filename-short "\n"
-                       spaces "#+CAPTION: "
-                       (format-time-string "%F" (current-time)) "\n"
-                       spaces "#+ATTR_ORG: :width 400\n"
-                       spaces "[[file:" filename "]]"))))
+      (insert (if anki filename-short
+                       (concat "#+NAME: " filename-short "\n"
+                               spaces "#+CAPTION: "
+                               (format-time-string "%F" (current-time)) "\n"
+                               spaces "#+ATTR_ORG: :width 400\n"
+                               spaces "[[file:" filename "]]")))))
 (defun ndu/cloze-region-auto-incr (&optional arg)
   "Cloze region without hint and increase card number."
   (require 'anki-editor)
@@ -484,19 +509,19 @@ Otherwise split the current paragraph into one sentence per line."
              :prepend t)
             ("z" "anki-occlusion-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
              :prepend t)
             ("x" "anki-occlusion-medium" plain
              (file+headline "~/org/anki.org" "Priority Medium")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
              :prepend t)
             ("c" "anki-occlusion-high" plain
              (file+headline "~/org/anki.org" "Priority High")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
              :prepend t)
             ("v" "anki-occlusion-highest" plain
              (file+headline "~/org/anki.org" "Priority Highest")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 image\n    :END:\n***** unoccluded\n      \n***** index\n      %<%s>\n***** extra\n      %?\n***** occlusion1\n      #+BEGIN_EXPORT html\n      #+END_EXPORT\n"
+             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
              :prepend t)))
     (setq-default
      org-emphasis-alist '(("*" bold)
@@ -915,6 +940,7 @@ Otherwise split the current paragraph into one sentence per line."
     org-lowest-priority  ?E
     org-default-priority org-lowest-priority
     git-magit-status-fullscreen t
+    vc-follow-symlinks t
     helm-full-frame t
     c-c++-lsp-enable-semantic-highlight t)
   (ndu/set-keys '(("C->"  #'indent-relative)
