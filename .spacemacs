@@ -519,13 +519,13 @@ Otherwise split the current paragraph into one sentence per line."
 		(setq org-capture-templates
           `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
              "  * %?" :prepend t)
-            ("w" "link" plain (file+headline "~/org/gtd.org" "Links")
+            ("w" "link" plain (file+headline "~/org/misc-notes-items.org" "Links")
              "** %(read-from-minibuffer \"Description: \")%(org-set-tags \"link\")\n%(ndu/insert-link-capture)"
              :prepend t)
-            ("e" "topic" plain (file+headline "~/org/gtd.org" "Inbox")
+            ("e" "topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
              "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
              :prepend t)
-            ("r" "item" plain (file+headline "~/org/gtd.org" "Inbox")
+            ("r" "item" plain (file+headline "~/org/misc-notes-items.org" "Items")
              "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
              :prepend t)
             ("t" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
