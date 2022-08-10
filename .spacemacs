@@ -1,6 +1,14 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu/insert-last-stored-link ()
+  (require 'org)
+  (interactive)
+  (insert " ")
+  (call-interactively 'org-insert-last-stored-link)
+  (kill-line)
+  (forward-line -1)
+  (end-of-line))
 (defun ndu/run-if-priority (fn priority)
   (interactive)
   (if (org-map-entries t (concat "PRIORITY=" "\"" priority "\"") 'agenda)
@@ -920,7 +928,7 @@ Otherwise split the current paragraph into one sentence per line."
       ("og" ndu/org-screenshot-anki)         ("ob" ndu/insert-progress-buffer)
       ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
       ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
-      ("oY" org-insert-last-stored-link)     ("oy" org-store-link)
+      ("oY" ndu/insert-last-stored-link)     ("oy" org-store-link)
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
