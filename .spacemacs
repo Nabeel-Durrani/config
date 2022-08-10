@@ -19,11 +19,16 @@
   (interactive)
   (string-join (org-get-outline-path t) "/"))
 (defun ndu/update-backlink-description ()
+  (require 'org)
   (interactive)
+  (outline-show-all)
   (goto-char (point-min))
   (while (re-search-forward ":BACKLINK-DESCRIPTION: " nil t)
     (kill-line)
-    (insert (concat " " (ndu/outline-path)))))
+    (insert (concat " " (ndu/outline-path))))
+  (org-set-tags-command '(4))
+  (goto-char (point-min))
+  (ndu/set-startup-visibility))
 (defun ndu/insert-backlink-description ()
   (interactive)
   (org-set-property "BACKLINK-DESCRIPTION" (ndu/outline-path)))
@@ -1018,3 +1023,24 @@ Otherwise split the current paragraph into one sentence per line."
   (custom-set-variables '(warning-suppress-types '((:warning))))
   (eshell)
   (find-file "~/org/gtd.org"))
+(defun dotspacemacs/emacs-custom-settings ()
+  "Emacs custom settings.
+This is an auto-generated function, do not modify its content directly, use
+Emacs customize menu instead.
+This function is called at the very end of Spacemacs initialization."
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(yasnippet-snippets yapfify xterm-color ws-butler writeroom-mode wordnut winum which-key web-mode web-beautify vterm volatile-highlights vim-powerline vi-tilde-fringe uuidgen use-package unfill undo-tree treemacs-projectile treemacs-persp treemacs-magit treemacs-icons-dired treemacs-evil toc-org terminal-here term-cursor tagedit symon symbol-overlay string-inflection sphinx-doc spacemacs-whitespace-cleanup spacemacs-purpose-popwin spaceline-all-the-icons space-doc smeargle slim-mode shell-pop scss-mode sass-mode rg reveal-in-osx-finder restart-emacs rainbow-delimiters quickrun pytest pylookup pyenv-mode pydoc py-isort pug-mode prettier-js popwin poetry pippel pipenv pip-requirements pdf-view-restore pcre2el password-generator paradox overseer osx-trash osx-dictionary osx-clipboard orgit-forge org-superstar org-rich-yank org-present org-pomodoro org-mime org-drill org-download org-contrib org-cliplink open-junk-file olivetti nov nose nameless mwim multi-term multi-line mmm-mode matlab-mode markdown-toc macrostep lsp-ui lsp-python-ms lsp-pyright lsp-origami lsp-latex lorem-ipsum live-py-mode link-hint launchctl latex-math-preview latex-extra inspector info+ indent-guide importmagic impatient-mode hybrid-mode hungry-delete holy-mode hl-todo highlight-parentheses highlight-numbers highlight-indentation hide-comnt help-fns+ helm-xref helm-themes helm-swoop helm-rtags helm-pydoc helm-purpose helm-projectile helm-org-rifle helm-org helm-mode-manager helm-make helm-lsp helm-ls-git helm-git-grep helm-flx helm-descbinds helm-css-scss helm-company helm-cider helm-c-yasnippet helm-ag google-translate google-c-style golden-ratio gnuplot gitignore-templates git-timemachine git-modes git-messenger git-link gh-md gendoxy geiser fuzzy font-lock+ flyspell-correct-helm flycheck-ycmd flycheck-rtags flycheck-pos-tip flycheck-package flycheck-elsa flx-ido fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-textobj-line evil-tex evil-surround evil-smartparens evil-org evil-numbers evil-nerd-commenter evil-matchit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-evilified-state evil-escape evil-ediff evil-easymotion evil-collection evil-cleverparens evil-args evil-anzu ess-R-data-view eshell-z eshell-prompt-extras esh-help emr emmet-mode elisp-slime-nav elisp-def elfeed-org editorconfig dumb-jump drag-stuff dotenv-mode disaster dired-quick-sort diminish devdocs dap-mode cython-mode csv-mode cpp-auto-include company-ycmd company-web company-rtags company-reftex company-math company-c-headers company-auctex company-anaconda column-enforce-mode code-cells clojure-snippets clean-aindent-mode cider-eval-sexp-fu centered-cursor-mode cdlatex ccls blacken auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile anki-editor aggressive-indent adaptive-wrap ace-link ace-jump-helm-line ac-ispell))
+ '(warning-suppress-types '((:warning))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(highlight-parentheses-highlight ((nil (:weight ultra-bold))) t)
+ '(org-checkbox ((t (:foreground "red" :weight bold)))))
+)
