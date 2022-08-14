@@ -16,10 +16,12 @@
 (defun ndu/prioritize-drill (drill-fn scope match-fn)
  (require 'org-drill)
  (interactive)
+ (setq-default org-sticky-header-always-show-header t)
  (let* ((tag (read-from-minibuffer "+tag_1...+tag_N: "))
         (fn (lambda (y) (funcall drill-fn scope (funcall match-fn y tag)))))
    (mapcar (lambda (x) (ndu/run-if-priority fn x))
-           '("A" "B" "C" "D" "E"))))
+           '("A" "B" "C" "D" "E")))
+ (setq-default org-sticky-header-always-show-header nil))
 (defun ndu/set-startup-visibility ()
   (interactive)
   (org-set-startup-visibility))
@@ -576,6 +578,8 @@ Otherwise split the current paragraph into one sentence per line."
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
              :prepend t)))
     (setq-default
+     org-sticky-header-full-path 'reversed
+     org-sticky-header-always-show-header nil
      org-emphasis-alist '(("*" bold)
                           ("/" italic)
                           ("_" underline)
@@ -680,8 +684,10 @@ Otherwise split the current paragraph into one sentence per line."
     ;; List of configuration layers to load. If it is the symbol `all' instead
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
-    '(html osx org git pdf
-      (shell :variables shell-default-shell 'ansi-term)
+    '(html osx (org :variables org-enable-sticky-header t
+                               org-enable-valign t)
+           git pdf
+      (shell :variables shell-default-shell 'eshell)
       (auto-completion
        :variables spacemacs-default-company-backends '(company-files
                                                        company-capf))
