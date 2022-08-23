@@ -291,17 +291,20 @@
   (setq fname-no-extension (make-temp-name (format-time-string "%Y%m%d%H%M%S"))
         filename-short (concat fname-no-extension ".png")
         n-copies (- (string-to-number (read-from-minibuffer "# of images: "
-                                                            "1"))
+                                                            "2"))
                     1)
         save-dir "anki_imgs/"
         filename (concat save-dir filename-short))
-  (org-insert-heading)
-  (insert "unoccluded")
-  (newline-and-indent)
+  (unless (eq n-copies 0)
+    (org-insert-heading)
+    (insert "unoccluded")
+    (newline-and-indent))
   (setq spaces (make-string (current-column) ?\s))
-  (insert (concat "#+BEGIN_EXPORT html\n" spaces))
+  (insert (concat "#+BEGIN_EXPORT html\n" spaces "<p><img src=\""))
   (ndu/org-screenshot filename-short filename t)
-  (insert (concat "\n" spaces "#+END_EXPORT\n"))
+  (insert "\"><br></p>")
+  (newline-and-indent)
+  (insert "#+END_EXPORT\n")
   (dotimes (n n-copies)
     (setq filename-copy-short (concat fname-no-extension "-"
                                       (number-to-string (+ n 1)) ".png")
@@ -311,7 +314,8 @@
       (newline-and-indent)
       (setq spaces (make-string (current-column) ?\s))
       (insert (concat "#+BEGIN_EXPORT html\n"
-                      spaces filename-copy-short "\n"
+                      spaces
+                      "<p><img src=\"" filename-copy-short "\"><br></p>\n"
                       spaces "#+END_EXPORT"))
       (copy-file filename filename-copy)
       (shell-command (format (concat "open -a krita " filename-copy)))))
