@@ -20,7 +20,7 @@
  (let* ((tag (read-from-minibuffer "+tag_1...+tag_N: "))
         (fn (lambda (y) (funcall drill-fn scope (funcall match-fn y tag)))))
    (mapcar (lambda (x) (ndu/run-if-priority fn x))
-           '("A" "B" "C" "D" "E")))
+           '("E"))) ; E is default - can change this to "A" "B" "C" "D" "E"
  (setq-default org-sticky-header-always-show-header nil))
 (defun ndu/set-startup-visibility ()
   (interactive)
@@ -437,7 +437,8 @@ Otherwise split the current paragraph into one sentence per line."
   (face-remap-add-relative 'variable-pitch
                            :family "Liberation Serif"
                            :height 1.0)
-  (olivetti-mode))
+  ;(olivetti-mode)
+  )
 (defun ndu/elfeed-mode ()
   (require 'elfeed)
   (define-key elfeed-search-mode-map (kbd "m") 'ndu/eww-open)
@@ -449,10 +450,10 @@ Otherwise split the current paragraph into one sentence per line."
     ("l" (elfeed-search-set-filter (ndu/view-tag "+foreign")) "foreign")
     ("b" (elfeed-search-set-filter (ndu/view-tag "+opinion")) "opinion")
     ("n" (elfeed-search-set-filter (ndu/view-tag "+tech")) "tech"))
-  (ndu/set-hooks '((elfeed-search-mode-hook (olivetti-mode))
-                   (elfeed-show-mode-hook (olivetti-mode))
-                   (eww-mode-hook (olivetti-mode))
-                   (eww-mode-hook (writeroom-mode))))
+  ;(ndu/set-hooks '((elfeed-search-mode-hook (olivetti-mode))
+  ;                (elfeed-show-mode-hook (olivetti-mode))
+  ;                (eww-mode-hook (olivetti-mode))
+  ;                (eww-mode-hook (writeroom-mode))))
   (add-hook 'eww-after-render-hook 'eww-readable))
 (defun ndu/save-recompile () (interactive) (save-buffer) (recompile))
 (defun ndu/set-leader (package binds)
@@ -502,6 +503,16 @@ Otherwise split the current paragraph into one sentence per line."
 (defun ndu/entry-backlinks ()
   (interactive)
   (rg (org-entry-get nil "ID") "*.org" org-directory))
+(defun ndu/id-link-open-new-window (path _)
+  "Open info in a new buffer"
+  (setq available-windows
+        (delete (selected-window) (window-list)))
+  (setq new-window
+         (or (car available-windows)
+             (split-window-right)
+             (split-window-sensibly)))
+  (select-window new-window)
+  (org-id-open path _))
 (defun ndu/org-mode ()
   (add-hook 'org-mode-hook
    '(lambda ()
@@ -509,7 +520,8 @@ Otherwise split the current paragraph into one sentence per line."
      (delete '("\\.png\\'" . default) org-file-apps)
      (add-to-list 'org-file-apps '("\\.pdf\\'" . "open %s"))
      (add-to-list 'org-file-apps '("\\.png\\'" . "open %s"))
-     (plist-put org-format-latex-options :scale 2.0)))
+     (plist-put org-format-latex-options :scale 2.0)
+     (org-link-set-parameters "id" :follow #'ndu/id-link-open-new-window)))
   (defun org-summary-todo (n-done n-not-done)
     "Switch entry to DONE when all subentries are done, to TODO otherwise."
     (let (org-log-done org-log-states)   ; turn off logging
@@ -524,16 +536,17 @@ Otherwise split the current paragraph into one sentence per line."
       (set-face-attribute face nil :weight 'regular :height 1.0))
     (ndu/set-hooks '((org-mode-hook (turn-on-org-cdlatex))
                      (org-mode-hook (auto-complete-mode))
-                     (org-mode-hook (olivetti-mode))
-                     (org-mode-hook (writeroom-mode))
-                     (org-mode-hook
-                      ((lambda ()
-                         (push '("[ ]" .  "☐") prettify-symbols-alist)
-                         (push '("[X]" . "☑" ) prettify-symbols-alist)
-                         (push '("-" . "—" ) prettify-symbols-alist)
-                         (push '("::" . "⁚" ) prettify-symbols-alist)
-                         (prettify-symbols-mode))))
-                     (org-after-todo-statistics-hook (org-summary-todo))))
+                     ;(org-mode-hook (olivetti-mode))
+                     ;(org-mode-hook (writeroom-mode))
+                    ;(org-mode-hook
+                      ;((lambda ()
+                      ;  (push '("[ ]" .  "☐") prettify-symbols-alist)
+                      ;  (push '("[X]" . "☑" ) prettify-symbols-alist)
+                      ;  (push '("-" . "—" ) prettify-symbols-alist)
+                      ;  (push '("::" . "⁚" ) prettify-symbols-alist)
+                      ;  (prettify-symbols-mode))))
+                    ;(org-after-todo-statistics-hook (org-summary-todo))
+                    ))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
           `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
@@ -590,8 +603,8 @@ Otherwise split the current paragraph into one sentence per line."
                           ("=" (bold :foreground "black" :background "red"))
                           ("~" (bold :foreground "black" :background "orange"))
                           ("+" (bold :foreground "black" :background "green")))
-     org-superstar-item-bullet-alist '((?* . ?↠) (?+ . ?⇝) (?- . ?→))
-     org-superstar-headline-bullets-list '("■" "◆" "•" "◉" "○" "▶")
+     ;org-superstar-item-bullet-alist '((?* . ?↠) (?+ . ?⇝) (?- . ?→))
+     ;org-superstar-headline-bullets-list '("■" "◆" "•" "◉" "○" "▶")
      org-checkbox-hierarchical-statistics nil
      ;; disable confirm message when evaluating stuff for org-babel
      ;org-confirm-babel-evaluate nil
@@ -623,7 +636,11 @@ Otherwise split the current paragraph into one sentence per line."
                            (?E . (:foreground "MediumAquamarine" :weight bold)))))
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (org-copy-face 'org-todo 'org-checkbox-statistics-todo
-                 "Face used for unfinished checkbox statistics."))
+                 "Face used for unfinished checkbox statistics.")
+  (setq-default org-fontify-quote-and-verse-blocks nil
+        org-fontify-whole-heading-line nil
+        org-hide-leading-stars nil
+        org-startup-indented nil))
 (defun ndu/latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
@@ -634,8 +651,9 @@ Otherwise split the current paragraph into one sentence per line."
   ;; the 'usepackage' macro for it - need following code for full support
   (ndu/set-hooks '((LaTeX-mode-hook ((lambda () (setq evil-shift-width 2))
                                      add-envs))
-                   (LaTeX-mode-hook (olivetti-mode))
-                   (LaTeX-mode-hook (writeroom-mode))))
+                   ;(LaTeX-mode-hook (olivetti-mode))
+                   ;(LaTeX-mode-hook (writeroom-mode))
+                   ))
   (setq-default
     font-latex-math-environments '("display" "displaymath" "equation"
                                     "eqnarray" "gather" "multline" "align"
@@ -690,7 +708,7 @@ Otherwise split the current paragraph into one sentence per line."
     dotspacemacs-configuration-layers
     '(html osx (org :variables org-enable-sticky-header t
                                org-enable-valign t)
-           git pdf
+           git pdf ivy
       (shell :variables shell-default-shell 'eshell)
       (auto-completion
        :variables spacemacs-default-company-backends '(company-files
@@ -717,11 +735,13 @@ Otherwise split the current paragraph into one sentence per line."
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(ansi-color anki-editor rg
-                                       org-drill adaptive-wrap
+                                       org-drill ;adaptive-wrap
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
                                        wordnut matlab-mode
-                                       nov olivetti hydra lsp-mode lsp-ui
+                                       nov ;olivetti
+                                       hydra lsp-mode lsp-ui
+                                      (evil-ediff :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
                                        ccls)
     ;; A list of packages and/or extensions that will not be install and loaded
     dotspacemacs-excluded-packages '(org-projectile)
@@ -745,7 +765,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; uses emacs key bindings for vim's insert mode, but otherwise leaves evil
     ;; unchanged. (default 'vim)
     dotspacemacs-editing-style 'vim
-    dotspacemacs-line-numbers t
+    dotspacemacs-line-numbers nil
     ;; If non nil output loading progress in `*Messages*' buffer. (default nil)
     dotspacemacs-verbose-loading nil
     ;; Specify the startup banner. Default value is `official', it displays
@@ -768,10 +788,10 @@ Otherwise split the current paragraph into one sentence per line."
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
     dotspacemacs-default-font '("Iosevka Fixed" ; Good unicode support (monospaced)
-                                :size 28
-                                :weight thin
-                                :width expanded
-                                :powerline-scale 1.1)
+                               :size 28
+                               :weight thin
+                               :width expanded
+                               :powerline-scale 1.1)
     ;; The leader key
     dotspacemacs-leader-key "SPC"
     ;; The leader key accessible in `emacs state' and `insert state'
@@ -798,7 +818,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; If non nil then `ido' replaces `helm' for some commands. For now only
     ;; `find-files' (SPC f f), `find-spacemacs-file' (SPC f e s), and
     ;; `find-contrib-file' (SPC f e c) are replaced. (default nil)
-    dotspacemacs-use-ido nil
+    dotspacemacs-use-ido t
     ;; If non nil, `helm' will try to miminimize the space it uses.
     ;; (default nil)
     dotspacemacs-helm-resize nil
@@ -807,7 +827,7 @@ Otherwise split the current paragraph into one sentence per line."
     dotspacemacs-helm-no-header nil
     ;; define the position to display `helm', options are `bottom', `top',
     ;; `left', or `right'. (default 'bottom)
-    dotspacemacs-helm-position 'bottom
+    ;dotspacemacs-helm-position 'bottom
     ;; If non nil the paste micro-state is enabled. When enabled pressing `p`
     ;; several times cycle between the kill ring content. (default nil)
     dotspacemacs-enable-paste-micro-state nil
@@ -973,11 +993,11 @@ Otherwise split the current paragraph into one sentence per line."
     auto-save-default t
     visual-fill-column-center-text t
     vterm-always-compile-module t
-    olivetti-style 'fancy
-    olivetti-body-width 86
-    writeroom-width 86
+    ;olivetti-style 'fancy
+    ;olivetti-body-width 86
+    ;writeroom-width 86
     org-use-property-inheritance t
-    olivetti-margin-width 5
+    ;olivetti-margin-width 5
     nov-text-width 60
     org-id-link-to-org-use-id 'create-if-interactive
     org-adapt-indentation t
@@ -1000,18 +1020,19 @@ Otherwise split the current paragraph into one sentence per line."
     org-lowest-priority  ?E
     org-default-priority org-lowest-priority
     git-magit-status-fullscreen t
-    vc-follow-symlinks t
-    helm-full-frame t
+    ;vc-follow-symlinks t
+    ;helm-full-frame t
     c-c++-lsp-enable-semantic-highlight t)
+  ;(setq-default left-margin-width 15 right-margin-width 15) ; Define new widths.
   (ndu/set-keys '(("C->"  #'indent-relative)
                   ("C-<"  #'ndu/indent-relative-below)
-                  ("C-\'" #'ndu/save-recompile))
-                t)
-  (ndu/set-hooks '((python-mode-hook (olivetti-mode))
-                   (c-mode-hook (olivetti-mode))
-                   (emacs-lisp-mode-hook (olivetti-mode))
-                   (sh-mode-hook (olivetti-mode))
-                   (c++-mode-hook (olivetti-mode))
+                  ("C-\'" #'ndu/save-recompile)
+                  ("C-;" #'follow-delete-other-windows-and-split)) t)
+  (ndu/set-hooks '(;(python-mode-hook (olivetti-mode))
+                   ;(c-mode-hook (olivetti-mode))
+                   ;(emacs-lisp-mode-hook (olivetti-mode))
+                   ;(sh-mode-hook (olivetti-mode))
+                   ;(c++-mode-hook (olivetti-mode))
                    (c++-mode-hook (lsp))))
   (global-visual-line-mode t)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "$" 'evil-end-of-visual-line)
@@ -1020,7 +1041,7 @@ Otherwise split the current paragraph into one sentence per line."
   (evil-define-minor-mode-key 'motion 'visual-line-mode "k" 'evil-previous-visual-line)
   ;; Adaptive wrap anyways needs the `visual-line-mode' to be enabled. So
   ;; enable it only when the latter is enabled.
-  (add-hook 'visual-line-mode-hook #'adaptive-wrap-prefix-mode)
+  ;(add-hook 'visual-line-mode-hook #'adaptive-wrap-prefix-mode)
   (global-set-key (kbd "M-q") 'ndu/fill-paragraph)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on
@@ -1039,26 +1060,14 @@ Otherwise split the current paragraph into one sentence per line."
            ndu/elfeed-mode))
   ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
-  (eshell)
+  ;(eshell)
+  (remove-hook 'find-file-hooks 'vc-refresh-state)
+  (remove-hook 'find-file-hooks 'projectile-find-file-hook-function)
+  (remove-hook 'find-file-hooks 'yas-global-mode-check-buffers)
+  (remove-hook 'find-file-hooks 'global-flycheck-mode-check-buffers)
+  (remove-hook 'find-file-hooks 'undo-tree-load-history-from-hook)
+  (remove-hook 'find-file-hook 'projectile-find-file-hook-function)
+  (remove-hook 'find-file-hook 'global-flycheck-mode-check-buffers)
+  (remove-hook 'find-file-hook 'yas-global-mode-check-buffers)
+  (remove-hook 'find-file-hook 'undo-tree-load-history-from-hook)
   (find-file "~/org/gtd.org"))
-(defun dotspacemacs/emacs-custom-settings ()
-  "Emacs custom settings.
-This is an auto-generated function, do not modify its content directly, use
-Emacs customize menu instead.
-This function is called at the very end of Spacemacs initialization."
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(yasnippet-snippets yapfify xterm-color ws-butler writeroom-mode wordnut winum which-key web-mode web-beautify vterm volatile-highlights vim-powerline vi-tilde-fringe uuidgen use-package unfill undo-tree treemacs-projectile treemacs-persp treemacs-magit treemacs-icons-dired treemacs-evil toc-org terminal-here term-cursor tagedit symon symbol-overlay string-inflection sphinx-doc spacemacs-whitespace-cleanup spacemacs-purpose-popwin spaceline-all-the-icons space-doc smeargle slim-mode shell-pop scss-mode sass-mode rg reveal-in-osx-finder restart-emacs rainbow-delimiters quickrun pytest pylookup pyenv-mode pydoc py-isort pug-mode prettier-js popwin poetry pippel pipenv pip-requirements pdf-view-restore pcre2el password-generator paradox overseer osx-trash osx-dictionary osx-clipboard orgit-forge org-superstar org-rich-yank org-present org-pomodoro org-mime org-drill org-download org-contrib org-cliplink open-junk-file olivetti nov nose nameless mwim multi-term multi-line mmm-mode matlab-mode markdown-toc macrostep lsp-ui lsp-python-ms lsp-pyright lsp-origami lsp-latex lorem-ipsum live-py-mode link-hint launchctl latex-math-preview latex-extra inspector info+ indent-guide importmagic impatient-mode hybrid-mode hungry-delete holy-mode hl-todo highlight-parentheses highlight-numbers highlight-indentation hide-comnt help-fns+ helm-xref helm-themes helm-swoop helm-rtags helm-pydoc helm-purpose helm-projectile helm-org-rifle helm-org helm-mode-manager helm-make helm-lsp helm-ls-git helm-git-grep helm-flx helm-descbinds helm-css-scss helm-company helm-cider helm-c-yasnippet helm-ag google-translate google-c-style golden-ratio gnuplot gitignore-templates git-timemachine git-modes git-messenger git-link gh-md gendoxy geiser fuzzy font-lock+ flyspell-correct-helm flycheck-ycmd flycheck-rtags flycheck-pos-tip flycheck-package flycheck-elsa flx-ido fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-textobj-line evil-tex evil-surround evil-smartparens evil-org evil-numbers evil-nerd-commenter evil-matchit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-evilified-state evil-escape evil-ediff evil-easymotion evil-collection evil-cleverparens evil-args evil-anzu ess-R-data-view eshell-z eshell-prompt-extras esh-help emr emmet-mode elisp-slime-nav elisp-def elfeed-org editorconfig dumb-jump drag-stuff dotenv-mode disaster dired-quick-sort diminish devdocs dap-mode cython-mode csv-mode cpp-auto-include company-ycmd company-web company-rtags company-reftex company-math company-c-headers company-auctex company-anaconda column-enforce-mode code-cells clojure-snippets clean-aindent-mode cider-eval-sexp-fu centered-cursor-mode cdlatex ccls blacken auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile anki-editor aggressive-indent adaptive-wrap ace-link ace-jump-helm-line ac-ispell))
- '(warning-suppress-types '((:warning))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(highlight-parentheses-highlight ((nil (:weight ultra-bold))) t)
- '(org-checkbox ((t (:foreground "red" :weight bold)))))
-)

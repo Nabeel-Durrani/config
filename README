@@ -1,0 +1,1 @@
+(fmakunbound 'use-package) added to start on init.el to avoid spacemacs error
