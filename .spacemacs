@@ -1,6 +1,10 @@
 ;; -*- mode: emacs-lisp -*-
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
+(defun ndu/quit-follow-mode ()
+  (interactive)
+  (evil-quit)
+  (follow-mode -1))
 (defun ndu/insert-last-stored-link ()
   (require 'org)
   (interactive)
@@ -1029,7 +1033,7 @@ Otherwise split the current paragraph into one sentence per line."
                   ("C-<"  #'ndu/indent-relative-below)
                   ("C-\'" #'ndu/save-recompile)
                   ("C-;" #'follow-delete-other-windows-and-split)
-                  ("C-:" #'follow-mode)) t)
+                  ("C-:" #'ndu/quit-follow-mode)) t)
   (ndu/set-hooks '(;(python-mode-hook (olivetti-mode))
                    ;(c-mode-hook (olivetti-mode))
                    ;(emacs-lisp-mode-hook (olivetti-mode))
