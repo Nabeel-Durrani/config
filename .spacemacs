@@ -527,6 +527,10 @@ Otherwise split the current paragraph into one sentence per line."
      (add-to-list 'org-file-apps '("\\.png\\'" . "open %s"))
      (plist-put org-format-latex-options :scale 2.0)
      (org-link-set-parameters "id" :follow #'ndu/id-link-open-new-window)))
+  (use-package org-tidy
+    :ensure t
+    :config
+    (add-hook 'org-mode-hook #'org-tidy-mode))
   (defun org-summary-todo (n-done n-not-done)
     "Switch entry to DONE when all subentries are done, to TODO otherwise."
     (let (org-log-done org-log-states)   ; turn off logging
@@ -555,50 +559,50 @@ Otherwise split the current paragraph into one sentence per line."
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
           `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
-             "  * %?" :prepend t)
+             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("w" "link" plain (file+headline "~/org/misc-notes-items.org" "Links")
              "** %(read-from-minibuffer \"Description: \")%(org-set-tags \"link\")\n%(ndu/insert-link-capture)"
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("e" "topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
              "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("r" "item" plain (file+headline "~/org/misc-notes-items.org" "Items")
              "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("t" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
-                        "** TODO %?" :prepend t)
+                        "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("a" "anki-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("s" "anki-medium" plain
              (file+headline "~/org/anki.org" "Priority Medium")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("d" "anki-high" plain
              (file+headline "~/org/anki.org" "Priority High")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("f" "anki-highest" plain
              (file+headline "~/org/anki.org" "Priority Highest")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("z" "anki-occlusion-low" plain
              (file+headline "~/org/anki.org" "Priority Low")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("x" "anki-occlusion-medium" plain
              (file+headline "~/org/anki.org" "Priority Medium")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("c" "anki-occlusion-high" plain
              (file+headline "~/org/anki.org" "Priority High")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t)
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("v" "anki-occlusion-highest" plain
              (file+headline "~/org/anki.org" "Priority Highest")
              "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t)))
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)))
     (setq-default
      org-sticky-header-full-path 'reversed
      org-sticky-header-always-show-header nil
@@ -642,10 +646,11 @@ Otherwise split the current paragraph into one sentence per line."
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (org-copy-face 'org-todo 'org-checkbox-statistics-todo
                  "Face used for unfinished checkbox statistics.")
-  (setq-default org-fontify-quote-and-verse-blocks nil
-        org-fontify-whole-heading-line nil
-        org-hide-leading-stars nil
-        org-startup-indented nil))
+; (setq-default org-fontify-quote-and-verse-blocks nil
+;       org-fontify-whole-heading-line nil
+;       org-hide-leading-stars nil
+;       org-startup-indented nil)
+)
 (defun ndu/latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
@@ -713,7 +718,7 @@ Otherwise split the current paragraph into one sentence per line."
     dotspacemacs-configuration-layers
     '(html osx (org :variables org-enable-sticky-header t
                                org-enable-valign t)
-           git pdf ivy
+           git pdf ivy org-tidy
       (shell :variables shell-default-shell 'eshell)
       (auto-completion
        :variables spacemacs-default-company-backends '(company-files
