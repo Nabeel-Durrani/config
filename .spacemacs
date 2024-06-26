@@ -518,7 +518,15 @@ Otherwise split the current paragraph into one sentence per line."
   (select-window new-window)
   (org-id-open path _)
   (evil-window-move-far-right))
+(defun ndu/org-drill-time-to-inactive-org-timestamp (time)
+  "Convert TIME into org-mode timestamp."
+  (format-time-string
+    (concat "[" (cdr org-time-stamp-formats) "]")
+    time))
 (defun ndu/org-mode ()
+  ;; bug in org-drill
+  (require 'org-drill)
+  (advice-add 'org-drill-time-to-inactive-org-timestamp :override #'ndu/org-drill-time-to-inactive-org-timestamp)
   (add-hook 'org-mode-hook
    '(lambda ()
      (delete '("\\.pdf\\'" . default) org-file-apps)
@@ -625,13 +633,14 @@ Otherwise split the current paragraph into one sentence per line."
                                ("DONE" . (:foreground "purple1" :weight bold)))
       org-directory "~/org"
       org-agenda-files '("~/org")
-      org-drill-add-random-noise-to-intervals-p t
+      ;org-drill-add-random-noise-to-intervals-p t
+      org-drill-cram-hours 0
       org-drill-spaced-repetition-algorithm 'sm2
       org-drill-hide-item-headings-p t       ; so priorities not clozed
       org-drill-leech-method nil             ; for reading text
       org-drill-forgetting-index 100         ; for reading text
       org-drill-leech-failure-threshold nil  ; for reading text
-      org-drill-scope 'directory
+      org-drill-scope 'file
       ;; MobileOrg iphone app
       ;; http://mobileorg.ncogni.to/doc/getting-started/using-dropbox/
       ;; Set to the location of your Org files on your local system
@@ -718,7 +727,7 @@ Otherwise split the current paragraph into one sentence per line."
     dotspacemacs-configuration-layers
     '(html osx (org :variables org-enable-sticky-header t
                                org-enable-valign t)
-           git pdf ivy org-tidy
+           git pdf ivy
       (shell :variables shell-default-shell 'eshell)
       (auto-completion
        :variables spacemacs-default-company-backends '(company-files
@@ -745,7 +754,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(ansi-color anki-editor rg
-                                       org-drill ;adaptive-wrap
+                                       org-drill org-tidy ;adaptive-wrap
                                        evil-smartparens cdlatex vterm
                                        latex-extra latex-math-preview
                                        wordnut matlab-mode
