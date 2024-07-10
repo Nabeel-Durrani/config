@@ -1,6 +1,188 @@
-;; -*- mode: emacs-lisp -*-
-;; This file is loaded by Spacemacs at startup.
-;; It must be stored in your home directory.
+;; Copyright (C) 2022  Alex Balgavy
+
+(defgroup vanish nil
+  "Customization group for `vanish'."
+  :group 'convenience)
+
+;; Specifications of regions of text to hide.
+(defcustom vanish-exprs
+  `((tblfm . (:key ?f
+                   :start ,(rx bol (* blank) "#+TBLFM:")
+                   :end ,(rx eol)
+                   :name "TBLFM"))
+    (drawer . (:key ?d
+                    :start ,(rx bol (* blank) ":" (* (not ":")) ":" eol)
+                    :end ,(rx bol (* blank) ":END:" eol)
+                    :name "drawer")))
+  "Expressions to hide. Each expression has a :key (the key to press to show/hide), :start and :end as regular expressions to determine the start/end of the element, and a :name."
+  :type '(alist :key-type symbol :value-type (plist :key-type symbol :value-type (choice (character :tag "Keybinding") (regexp :tag "Regex"))))
+  :group 'vanish)
+
+;; Prefix key for vanish minor mode keymap
+(defcustom vanish-prefix (kbd "C-c v")
+  "Prefix for vanish keymap"
+  :type 'key-sequence
+  :group 'vanish)
+
+;; Keymap for vanish mode, initially empty, filled on activation
+;; of minor mode.
+(defvar vanish-mode-map (make-sparse-keymap))
+
+;; Minor mode for vanish.
+(define-minor-mode vanish-mode
+  "Turn on Vanish mode"
+  :lighter " Vanish"
+  :group 'vanish
+  :keymap vanish-mode-map
+  (vanish--initialize vanish-prefix)
+  ;; When vanish mode disabled, show everything that was hidden.
+  (unless vanish-mode (vanish-show-all)))
+
+;; Buffer-local list of elements that are currently hidden.
+(defvar-local vanish--hidden-elements
+  (list)
+  "Elements currently hidden")
+
+(defun vanish-set-hide (element hidden)
+  "Hide ELEMENT (symbol) if HIDDEN is t, show if it's nil,"
+    (let* ((element-vanish-expr (cdr (assoc element vanish-exprs)))
+           (vanish-start-re (plist-get element-vanish-expr :start))
+           (vanish-end-re (plist-get element-vanish-expr :end)))
+      (save-excursion
+        (let* ((beg (point-min))
+               (end (point-max)))
+          (goto-char beg)
+          (while (re-search-forward vanish-start-re end t)
+            (save-excursion
+              (beginning-of-line 1)
+              (when (looking-at vanish-start-re)
+                (let* ((start (1- (match-beginning 0)))
+                       (limit (save-excursion
+                                (outline-next-heading)
+                                (point))))
+                  (if (re-search-forward vanish-end-re limit t)
+                      (outline-flag-region start (point-at-eol) hidden)
+                    (user-error "Error"))))))))
+      ;; Set org-cycle-hook
+      (if hidden
+          (add-hook 'org-cycle-hook #'vanish--cycle-hook nil 'local)
+        (remove-hook 'org-cycle-hook #'vanish-cycle-hook 'local))
+
+      ;; Set buffer-local list of hidden elements
+      (if hidden
+          (unless (memq element vanish--hidden-elements) (push element vanish--hidden-elements))
+        (setq vanish--hidden-elements (remove element vanish--hidden-elements)))
+
+      ;; Let the user know what happened
+      (message "%s now %s." (plist-get element-vanish-expr :name) (if (memq element vanish--hidden-elements) "hidden" "shown"))))
+
+(defun vanish--cycle-hook (&rest _)
+  "Re-hide all currently hidden elements when Org visibility is cycled."
+  (mapc (lambda (e) (vanish-set-hide e t))
+        vanish--hidden-elements))
+
+(defun vanish-show-all ()
+  "Show all currenltly hidden elements."
+  (mapc (lambda (e) (vanish-set-hide e nil))
+        vanish--hidden-elements))
+
+(defun vanish-toggle-hide (elem)
+  "Toggle hiding of ELEM."
+  (let ((elem-is-hidden (memq elem vanish--hidden-elements)))
+    (vanish-set-hide elem (not elem-is-hidden))))
+
+(defun vanish-hide (prefix elem)
+  "Toggle hiding of ELEM if PREFIX is 1, hide if PREFIX <= 0, show if PREFIX > 1."
+  (cond ((= prefix 1)
+         (vanish-toggle-hide elem))
+        ((<= prefix 0)
+         (vanish-set-hide elem nil))
+        ((> prefix 1)
+         (vanish-set-hide elem t))))
+
+(defun vanish--create-binding (kbd-prefix elem)
+  "Create a binding for ELEM based on its corresponding `:key` in `vanish-exprs`, starting with KBD-PREFIX."
+  (let* ((element-vanish-exp (cdr (assoc elem vanish-exprs)))
+         (element-key (plist-get element-vanish-exp :key))
+         (element-name (plist-get element-vanish-exp :name)))
+    (define-key vanish-mode-map (concat kbd-prefix (char-to-string element-key))
+      `(lambda (prefix)
+         ,(format "Toggle hiding of %s if PREFIX is 1, hide if PREFIX <= 0, show if PREFIX > 1." element-name)
+         (interactive "p") (vanish-hide prefix (quote ,elem))))))
+
+(defun vanish--initialize (kbd-prefix)
+  "Set up all key bindings starting with KBD-PREFIX"
+  (mapc (lambda (e) (vanish--create-binding kbd-prefix (car e)))
+        vanish-exprs))
+(provide 'vanish)
+(require 'vanish)
+(defun ndu/get-remote-range (x y)
+  (let ((ret (org-table-get-remote-range x y)))
+    (if (listp ret) ret (list ret))))
+(defun mapcar* (function &rest args)
+  "Apply FUNCTION to successive cars of all ARGS.
+Return the list of results."
+  ;; If no list is exhausted,
+  (if (not (memq nil args))
+      ;; apply function to CARs.
+      (cons (apply function (mapcar #'car args))
+            (apply #'mapcar* function
+                   ;; Recurse for rest of elements.
+                   (mapcar #'cdr args)))))
+(defun ndu/sum-str-to-num (strs)
+  (apply '+ (mapcar 'string-to-number strs)))
+
+(defun ndu/cmp-pairs (x y)
+ (and (eq (car x) (car y))
+      (eq (cadr x) (cadr y))))
+(defun ndu/lookup-all-sum  (val slist rlist &optional predicate)
+ (let ((ret (ndu/sum-str-to-num (org-lookup-all
+                                 val
+                                 slist
+                                 rlist))))
+  (if ret ret 0)))
+(defun ndu/get-blocks (blocksTbl blocksTsk tsk)
+  (interactive)
+  (cond ((> (ndu/lookup-all-sum
+             (org-entry-get nil "ITEM")
+             (ndu/get-remote-range blocksTbl "@2$1..@>$1")
+             (ndu/get-remote-range blocksTbl "@2$3..@>$3"))
+            0) 1)
+        ((> (let ((tbls (ndu/get-remote-range blocksTsk "@2$1..@>$1"))
+                  (tsks (ndu/get-remote-range blocksTsk "@2$2..@>$2"))
+                  (blks (ndu/get-remote-range blocksTsk "@2$4..@>$4")))
+             (ndu/lookup-all-sum
+              (list (org-entry-get nil "ITEM") tsk)
+              (mapcar* 'list tbls tsks)
+              blks
+              'ndu/cmp-pairs))
+            0) 1)
+        (t 0)))
+(defun ndu/update-tables ()
+  "Similar to org-table-iterate-buffer-tables, but excludes headings with tag 'cache'."
+  (interactive)
+  (org-update-all-dblocks)             ;; for my imports from org-column of other file
+  (let* ((imax 10)
+        (i imax)
+        (checksum (md5 (buffer-string)))
+        c1)
+    (org-with-wide-buffer
+    (catch 'exit
+      (while (> i 0)
+        (setq i (1- i))
+        (org-table-map-tables
+          (lambda ()
+            (unless (member "cache" (org-get-tags))
+              (org-table-recalculate t t)))
+          t)
+        (if (equal checksum (setq c1 (md5 (buffer-string))))
+            (progn
+              (org-table-map-tables #'org-table-align t)
+              (message "Convergence after %d iterations" (- imax i))
+              (throw 'exit t))
+          (setq checksum c1)))
+      (org-table-map-tables #'org-table-align t)
+      (user-error "No convergence after %d iterations" imax)))))
 (defun ndu/quit-follow-mode ()
   (interactive)
   (evil-quit)
@@ -534,7 +716,8 @@ Otherwise split the current paragraph into one sentence per line."
      (add-to-list 'org-file-apps '("\\.pdf\\'" . "open %s"))
      (add-to-list 'org-file-apps '("\\.png\\'" . "open %s"))
      (plist-put org-format-latex-options :scale 2.0)
-     (org-link-set-parameters "id" :follow #'ndu/id-link-open-new-window)))
+     (org-link-set-parameters "id" :follow #'ndu/id-link-open-new-window)
+     ))
   (use-package org-tidy
     :ensure t
     :config
@@ -551,26 +734,13 @@ Otherwise split the current paragraph into one sentence per line."
                     org-level-4
                     org-level-5))
       (set-face-attribute face nil :weight 'regular :height 1.0))
-    (ndu/set-hooks '((org-mode-hook (turn-on-org-cdlatex))
+    (ndu/set-hooks '(;(org-mode-hook (turn-on-org-cdlatex))
                      (org-mode-hook (auto-complete-mode))
-                     ;(org-mode-hook (olivetti-mode))
-                     ;(org-mode-hook (writeroom-mode))
-                    ;(org-mode-hook
-                      ;((lambda ()
-                      ;  (push '("[ ]" .  "☐") prettify-symbols-alist)
-                      ;  (push '("[X]" . "☑" ) prettify-symbols-alist)
-                      ;  (push '("-" . "—" ) prettify-symbols-alist)
-                      ;  (push '("::" . "⁚" ) prettify-symbols-alist)
-                      ;  (prettify-symbols-mode))))
-                    ;(org-after-todo-statistics-hook (org-summary-todo))
-                    ))
+                     (org-mode-hook (vanish-mode))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
           `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
              "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("w" "link" plain (file+headline "~/org/misc-notes-items.org" "Links")
-             "** %(read-from-minibuffer \"Description: \")%(org-set-tags \"link\")\n%(ndu/insert-link-capture)"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("e" "topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
              "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
@@ -578,39 +748,7 @@ Otherwise split the current paragraph into one sentence per line."
              "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("t" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
-                        "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("a" "anki-low" plain
-             (file+headline "~/org/anki.org" "Priority Low")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("s" "anki-medium" plain
-             (file+headline "~/org/anki.org" "Priority Medium")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("d" "anki-high" plain
-             (file+headline "~/org/anki.org" "Priority High")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("f" "anki-highest" plain
-             (file+headline "~/org/anki.org" "Priority Highest")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 tts\n    :END:\n***** text\n      %?\n***** index\n      %<%s>\n***** extra\n      "
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("z" "anki-occlusion-low" plain
-             (file+headline "~/org/anki.org" "Priority Low")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_1 priority_2 priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("x" "anki-occlusion-medium" plain
-             (file+headline "~/org/anki.org" "Priority Medium")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: image_occlusion\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_2 priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("c" "anki-occlusion-high" plain
-             (file+headline "~/org/anki.org" "Priority High")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_3 priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("v" "anki-occlusion-highest" plain
-             (file+headline "~/org/anki.org" "Priority Highest")
-             "*** Note %T\n    :PROPERTIES:\n    :ANKI_NOTE_TYPE: tts_cloze\n    :ANKI_DECK: main\n    :ANKI_TAGS: priority_4 image\n    :END:\n***** index\n      %<%s>\n***** extra\n      %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)))
+                        "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)))
     (setq-default
      org-sticky-header-full-path 'reversed
      org-sticky-header-always-show-header nil
@@ -620,17 +758,15 @@ Otherwise split the current paragraph into one sentence per line."
                           ("=" (bold :foreground "black" :background "red"))
                           ("~" (bold :foreground "black" :background "orange"))
                           ("+" (bold :foreground "black" :background "green")))
-     ;org-superstar-item-bullet-alist '((?* . ?↠) (?+ . ?⇝) (?- . ?→))
-     ;org-superstar-headline-bullets-list '("■" "◆" "•" "◉" "○" "▶")
      org-checkbox-hierarchical-statistics nil
      ;; disable confirm message when evaluating stuff for org-babel
-     ;org-confirm-babel-evaluate nil
-      org-log-done 'time
-      org-todo-keywords '((sequence "TODO" "IN-PROGRESS" "ON-HOLD" "DONE"))
-      org-todo-keyword-faces '(("TODO" . (:foreground "purple4" :weight bold))
-                               ("IN-PROGRESS" . (:foreground "purple3" :weight bold))
-                               ("ON-HOLD" . (:foreground "purple2" :weight bold))
-                               ("DONE" . (:foreground "purple1" :weight bold)))
+     org-confirm-babel-evaluate nil
+     org-log-done 'time
+     org-todo-keywords '((sequence "TODO" "IN-PROGRESS" "ON-HOLD" "DONE"))
+     org-todo-keyword-faces '(("TODO" . (:foreground "purple4" :weight bold))
+                              ("IN-PROGRESS" . (:foreground "purple3" :weight bold))
+                              ("ON-HOLD" . (:foreground "purple2" :weight bold))
+                              ("DONE" . (:foreground "purple1" :weight bold)))
       org-directory "~/org"
       org-agenda-files '("~/org")
       ;org-drill-add-random-noise-to-intervals-p t
@@ -654,12 +790,7 @@ Otherwise split the current paragraph into one sentence per line."
                            (?E . (:foreground "MediumAquamarine" :weight bold)))))
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (org-copy-face 'org-todo 'org-checkbox-statistics-todo
-                 "Face used for unfinished checkbox statistics.")
-; (setq-default org-fontify-quote-and-verse-blocks nil
-;       org-fontify-whole-heading-line nil
-;       org-hide-leading-stars nil
-;       org-startup-indented nil)
-)
+                 "Face used for unfinished checkbox statistics."))
 (defun ndu/latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
@@ -976,7 +1107,8 @@ Otherwise split the current paragraph into one sentence per line."
       ("o/" anki-editor-latex-region)        ("ot" ndu/insert-progress-tree)
       ("og" ndu/org-screenshot-anki)         ("ob" ndu/insert-progress-buffer)
       ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
-      ("oo" org-capture)                     ("op" ndu/org-screenshot-regular)
+      ("oo" org-table-expand)                ("oO" org-table-shrink)
+      ("op" ndu/org-screenshot-regular)
       ("oY" ndu/insert-last-stored-link)     ("oy" org-store-link)
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
@@ -1042,18 +1174,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;vc-follow-symlinks t
     ;helm-full-frame t
     c-c++-lsp-enable-semantic-highlight t)
-  ;(setq-default left-margin-width 15 right-margin-width 15) ; Define new widths.
-  (ndu/set-keys '(("C->"  #'indent-relative)
-                  ("C-<"  #'ndu/indent-relative-below)
-                  ("C-\'" #'ndu/save-recompile)
-                  ("C-;" #'follow-delete-other-windows-and-split)
-                  ("C-:" #'ndu/quit-follow-mode)) t)
-  (ndu/set-hooks '(;(python-mode-hook (olivetti-mode))
-                   ;(c-mode-hook (olivetti-mode))
-                   ;(emacs-lisp-mode-hook (olivetti-mode))
-                   ;(sh-mode-hook (olivetti-mode))
-                   ;(c++-mode-hook (olivetti-mode))
-                   (c++-mode-hook (lsp))))
+  (ndu/set-hooks '((c++-mode-hook (lsp))))
   (global-visual-line-mode t)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "$" 'evil-end-of-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "^" 'evil-first-non-blank-of-visual-line)
@@ -1068,19 +1189,16 @@ Otherwise split the current paragraph into one sentence per line."
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            global-flycheck-mode
-           ; global-auto-complete-mode
            ndu/org-mode
            ndu/latex
            ndu/ansi-color
            ndu/doxymacs
-           ; ndu/taskjuggler
            ndu/clojure
            ndu/emacs-lisp
            ndu/c-mode
            ndu/elfeed-mode))
   ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
-  ;(eshell)
   (remove-hook 'find-file-hooks 'vc-refresh-state)
   (remove-hook 'find-file-hooks 'projectile-find-file-hook-function)
   (remove-hook 'find-file-hooks 'yas-global-mode-check-buffers)
@@ -1090,4 +1208,8 @@ Otherwise split the current paragraph into one sentence per line."
   (remove-hook 'find-file-hook 'global-flycheck-mode-check-buffers)
   (remove-hook 'find-file-hook 'yas-global-mode-check-buffers)
   (remove-hook 'find-file-hook 'undo-tree-load-history-from-hook)
+  (ndu/set-keys '(("C-<"  #'ndu/update-tables)
+                  ("C->" #'counsel-outline)
+                  ("C-;" #'follow-delete-other-windows-and-split)
+                  ("C-:" #'ndu/quit-follow-mode)) t)
   (find-file "~/org/gtd.org"))
