@@ -142,10 +142,10 @@
   (newline-and-indent)
   (setq spaces (make-string (current-column) ?\s))
   (insert (concat "#+NAME: " (org-entry-get nil "ITEM")                              "\n"
-           spaces "| TBL | U-IMP | U-UGH | S-EFF | TBL-PRI | PROG | TSK | TSK-PRI |" "\n"
-           spaces "| <0> | <0>   | <0>   | <0>   | <0>     | <0>  | <0> | <0>     |" "\n"
-           spaces "|-----+-------+-------+-------+---------+------+-----+---------|" "\n"
-           spaces "|     |       |       |       |         |      |     |         |" "\n"
+           spaces "| I-TBL | U-IMP | U-UGH | S-EFF | I-PRI | PROG | TSK | TSK-PRI |" "\n"
+           spaces "| <0>   | <0>   | <0>   | <0>   | <0>   | <0>  | <0> | <0>     |" "\n"
+           spaces "|-------+-------+-------+-------+-------+------+-----+---------|" "\n"
+           spaces "|       |       |       |       |       |      |     |         |" "\n"
            spaces "#+TBLFM: "
                   "$2=vmean(remote($1, @I$2..@>$2);%.2f::"
                   "$3=vmean(remote($1, @I$3..@>$3);%.2f::"
@@ -782,8 +782,7 @@ Otherwise split the current paragraph into one sentence per line."
      (add-to-list 'org-file-apps '("\\.pdf\\'" . "open %s"))
      (add-to-list 'org-file-apps '("\\.png\\'" . "open %s"))
      (plist-put org-format-latex-options :scale 2.0)
-     (org-link-set-parameters "id" :follow #'ndu/id-link-open-new-window)
-     ))
+     (org-link-set-parameters "id" :follow #'ndu/id-link-open-new-window)))
   (use-package org-tidy
     :ensure t
     :config
@@ -826,6 +825,7 @@ Otherwise split the current paragraph into one sentence per line."
     (setq-default
      org-sticky-header-full-path 'reversed
      org-sticky-header-always-show-header nil
+     org-table-automatic-realign nil ; less frenetic editing of tables. Align using C-c C-c
      org-emphasis-alist '(("*" bold)
                           ("/" italic)
                           ("_" underline)
@@ -930,8 +930,8 @@ Otherwise split the current paragraph into one sentence per line."
     ;; List of configuration layers to load. If it is the symbol `all' instead
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
-    '(html osx (org :variables org-enable-sticky-header t
-                               org-enable-valign t)
+    '(html osx (org :variables org-enable-sticky-header t ;org-enable-valign t
+                    )
            git pdf ivy
       (shell :variables shell-default-shell 'eshell)
       (auto-completion
@@ -1180,7 +1180,8 @@ Otherwise split the current paragraph into one sentence per line."
       ("o," ndu/cloze-region-auto-incr)      ("o." ndu/cloze-region-dont-incr)
       ("o/" anki-editor-latex-region)        ("ov" ndu/insert-progress-tree)
       ("og" ndu/align-tags)                  ("oV" ndu/insert-progress-buffer)
-      ("ou" anki-editor-retry-failure-notes) ("oi" ndu/update-tables)
+      ("ou" anki-editor-retry-failure-notes) ("o'"  ndu/insert-link)
+      ("oi" ndu/update-tables)               ("oI" org-table-edit-formulas)
       ("oo" org-capture)                     ("oO" vanish-mode)
       ("op" org-table-expand)                ("oP" org-table-shrink)
       ("oY"  ndu/insert-last-stored-link)    ("oy" org-store-link)
@@ -1188,8 +1189,7 @@ Otherwise split the current paragraph into one sentence per line."
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
       ("o,"  ndu/related-insert)             ("o." ndu/related-append)
-      ("o<"  org-drill-resume)               ("o>" org-drill-again)
-      ("o'"  ndu/insert-link)))
+      ("o<"  org-drill-resume)               ("o>" org-drill-again)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
     "v" 'nov-view-source
