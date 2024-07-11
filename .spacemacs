@@ -225,10 +225,9 @@ Return the list of results."
             0) 1)
         (t 0)))
 (defun ndu/update-tables ()
-  "Similar to org-table-iterate-buffer-tables, but excludes headings with tag 'cache'."
+  "Similar to org-table-iterate-buffer-tables, but excludes headings with tag 'cached'."
   (interactive)
-  (org-update-all-dblocks)             ;; for my imports from org-column of other file
-  (let* ((imax 10)
+  (let* ((imax 100)
         (i imax)
         (checksum (md5 (buffer-string)))
         c1)
@@ -238,7 +237,7 @@ Return the list of results."
         (setq i (1- i))
         (org-table-map-tables
           (lambda ()
-            (unless (member "cache" (org-get-tags))
+            (unless (member "cached" (org-get-tags))
               (org-table-recalculate t t)))
           t)
         (if (equal checksum (setq c1 (md5 (buffer-string))))
@@ -804,7 +803,7 @@ Otherwise split the current paragraph into one sentence per line."
                      (org-mode-hook (vanish-mode))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("w" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
+          `(("w" "todo" plain (file+headline "~/org/gtd.org" "Tasks")
              "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("e" "topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
              ;; "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
