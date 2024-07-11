@@ -1,9 +1,6 @@
-;; Copyright (C) 2022  Alex Balgavy
-
 (defgroup vanish nil
   "Customization group for `vanish'."
   :group 'convenience)
-
 ;; Specifications of regions of text to hide.
 (defcustom vanish-exprs
   `((tblfm . (:key ?f
@@ -17,17 +14,14 @@
   "Expressions to hide. Each expression has a :key (the key to press to show/hide), :start and :end as regular expressions to determine the start/end of the element, and a :name."
   :type '(alist :key-type symbol :value-type (plist :key-type symbol :value-type (choice (character :tag "Keybinding") (regexp :tag "Regex"))))
   :group 'vanish)
-
 ;; Prefix key for vanish minor mode keymap
 (defcustom vanish-prefix (kbd "C-c v")
   "Prefix for vanish keymap"
   :type 'key-sequence
   :group 'vanish)
-
 ;; Keymap for vanish mode, initially empty, filled on activation
 ;; of minor mode.
 (defvar vanish-mode-map (make-sparse-keymap))
-
 ;; Minor mode for vanish.
 (define-minor-mode vanish-mode
   "Turn on Vanish mode"
@@ -37,12 +31,10 @@
   (vanish--initialize vanish-prefix)
   ;; When vanish mode disabled, show everything that was hidden.
   (unless vanish-mode (vanish-show-all)))
-
 ;; Buffer-local list of elements that are currently hidden.
 (defvar-local vanish--hidden-elements
   (list)
   "Elements currently hidden")
-
 (defun vanish-set-hide (element hidden)
   "Hide ELEMENT (symbol) if HIDDEN is t, show if it's nil,"
     (let* ((element-vanish-expr (cdr (assoc element vanish-exprs)))
@@ -75,22 +67,18 @@
 
       ;; Let the user know what happened
       (message "%s now %s." (plist-get element-vanish-expr :name) (if (memq element vanish--hidden-elements) "hidden" "shown"))))
-
 (defun vanish--cycle-hook (&rest _)
   "Re-hide all currently hidden elements when Org visibility is cycled."
   (mapc (lambda (e) (vanish-set-hide e t))
         vanish--hidden-elements))
-
 (defun vanish-show-all ()
   "Show all currenltly hidden elements."
   (mapc (lambda (e) (vanish-set-hide e nil))
         vanish--hidden-elements))
-
 (defun vanish-toggle-hide (elem)
   "Toggle hiding of ELEM."
   (let ((elem-is-hidden (memq elem vanish--hidden-elements)))
     (vanish-set-hide elem (not elem-is-hidden))))
-
 (defun vanish-hide (prefix elem)
   "Toggle hiding of ELEM if PREFIX is 1, hide if PREFIX <= 0, show if PREFIX > 1."
   (cond ((= prefix 1)
@@ -99,7 +87,6 @@
          (vanish-set-hide elem nil))
         ((> prefix 1)
          (vanish-set-hide elem t))))
-
 (defun vanish--create-binding (kbd-prefix elem)
   "Create a binding for ELEM based on its corresponding `:key` in `vanish-exprs`, starting with KBD-PREFIX."
   (let* ((element-vanish-exp (cdr (assoc elem vanish-exprs)))
@@ -109,13 +96,92 @@
       `(lambda (prefix)
          ,(format "Toggle hiding of %s if PREFIX is 1, hide if PREFIX <= 0, show if PREFIX > 1." element-name)
          (interactive "p") (vanish-hide prefix (quote ,elem))))))
-
 (defun vanish--initialize (kbd-prefix)
   "Set up all key bindings starting with KBD-PREFIX"
   (mapc (lambda (e) (vanish--create-binding kbd-prefix (car e)))
         vanish-exprs))
 (provide 'vanish)
 (require 'vanish)
+(defun ndu/remove-tag (tag)
+  (interactive)
+  (org-set-tags (delete tag (org-get-tags))))
+(defun ndu/add-tag (tag)
+  (interactive)
+  (setq lst (org-get-tags))
+  (org-set-tags (push tag lst)))
+(defun ndu/removed-cached-tag ()
+  (interactive)
+  (ndu/remove-tag "cached"))
+(defun ndu/add-cached-tag ()
+  (interactive)
+  (ndu/add-tag "cached"))
+(defun ndu/align-tags ()
+  (interactive)
+  (org-set-tags-command '(4))) ; '(4) is the universal argument
+(defun ndu/insert-blocks-task ()
+  (interactive)
+  (move-end-of-line 1)
+  (newline-and-indent)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
+           spaces "| I-TBL | I-TSK | B-TBL | BLK |"     "\n"
+           spaces "|-------+-------+-------+-----|"     "\n"
+           spaces "|       |       |       |     |")))
+(defun ndu/insert-blocks-table ()
+  (interactive)
+  (move-end-of-line 1)
+  (newline-and-indent)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
+                  spaces "| I-TBL | B-TBL | BLK |"      "\n"
+                  spaces "|-------+-------+-----|"      "\n"
+                  spaces "|       |       |     |")))
+(defun ndu/insert-topic-table ()
+  (interactive)
+  (move-end-of-line 1)
+  (newline-and-indent)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert (concat "#+NAME: " (org-entry-get nil "ITEM")                              "\n"
+           spaces "| TBL | U-IMP | U-UGH | S-EFF | TBL-PRI | PROG | TSK | TSK-PRI |" "\n"
+           spaces "| <0> | <0>   | <0>   | <0>   | <0>     | <0>  | <0> | <0>     |" "\n"
+           spaces "|-----+-------+-------+-------+---------+------+-----+---------|" "\n"
+           spaces "|     |       |       |       |         |      |     |         |" "\n"
+           spaces "#+TBLFM: "
+                  "$2=vmean(remote($1, @I$2..@>$2);%.2f::"
+                  "$3=vmean(remote($1, @I$3..@>$3);%.2f::"
+                  "$4=min(vsum(remote($1, @I$7..@>$7)), 1000);%.2f::"
+                  "$5=vsum(remote($1, @I$8..@>$8))/$4;%.2f::"
+                  "$6=vsum(remote($1,@I$6..@>$6))/vlen(remote($1,@I$6..@>$6));%.2f::"
+                  "$7='(org-lookup-first $8 '(remote($1, @I$8..@>$8)) '(remote($1, @I$1..@>$1)))::"
+                  "$8=vmax(remote($1, @I$8..@>$8));%.2f")))
+(defun ndu/insert-item-table ()
+  (interactive)
+  (move-end-of-line 1)
+  (newline-and-indent)
+  (let ((spaces    (make-string (current-column) ?\s))
+        (blocksTbl (read-from-minibuffer "Blocking items table: " nil nil nil nil "blocksTbl"))
+        (blocksTsk (read-from-minibuffer "Blocking tasks table: " nil nil nil nil "blocksTsk")))
+    (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
+                    spaces "| TSK | IMP | UGH | TIM | BLK | DONE | EFF | PRI | PRI-N |" "\n"
+                    spaces "| <0> | <0> | <0> | <0> | <0> | <0>  | <0> | <0> | <0>   |" "\n"
+                    spaces "|-----+-----+-----+-----+-----+------+-----+-----+-------|" "\n"
+                    spaces "|     |     |     |     |     |      |     |     |       |" "\n"
+                    spaces "#+TBLFM: "
+                           "$5='(ndu/get-blocks" " " "\"" blocksTbl "\"" " " "\"" blocksTsk "\"" " " "$1)::"
+                           "$7=(1-$6)*min(exp(4*min(vsum(@3$5..@>$5), 5))*$4,100);%.2f::"
+                           "$8=((1-$5)*(1-$6)*($2*$3^(remote(const_tbl,@I$3)))^(1/3)/($7 + 0.1*$6);%.2f::"
+                           "$9=5*$8/vmax(@3$8..@>$8);%.1f"))))
+(defun ndu/insert-task-topic-item ()
+  (interactive)
+  (let* ((task (read-from-minibuffer "Heading Name: "))
+         (tag  (concat ":" task "@map" ":")))
+   (concat "** " task " " tag)))
+(defun ndu/hide-tbmlfm ()
+  (interactive)
+  (vanish-set-hide 'tblfm t))
+(defun ndu/show-tbmlfm ()
+  (interactive)
+  (vanish-set-hide 'tblfm nil))
 (defun ndu/get-remote-range (x y)
   (let ((ret (org-table-get-remote-range x y)))
     (if (listp ret) ret (list ret))))
@@ -183,9 +249,12 @@ Return the list of results."
           (setq checksum c1)))
       (org-table-map-tables #'org-table-align t)
       (user-error "No convergence after %d iterations" imax)))))
-(defun ndu/quit-follow-mode ()
+(defun ndu/quit-follow-mode-and-quit ()
   (interactive)
   (evil-quit)
+  (follow-mode -1))
+(defun ndu/quit-follow-mode ()
+  (interactive)
   (follow-mode -1))
 (defun ndu/insert-last-stored-link ()
   (require 'org)
@@ -636,10 +705,6 @@ Otherwise split the current paragraph into one sentence per line."
     ("l" (elfeed-search-set-filter (ndu/view-tag "+foreign")) "foreign")
     ("b" (elfeed-search-set-filter (ndu/view-tag "+opinion")) "opinion")
     ("n" (elfeed-search-set-filter (ndu/view-tag "+tech")) "tech"))
-  ;(ndu/set-hooks '((elfeed-search-mode-hook (olivetti-mode))
-  ;                (elfeed-show-mode-hook (olivetti-mode))
-  ;                (eww-mode-hook (olivetti-mode))
-  ;                (eww-mode-hook (writeroom-mode))))
   (add-hook 'eww-after-render-hook 'eww-readable))
 (defun ndu/save-recompile () (interactive) (save-buffer) (recompile))
 (defun ndu/set-leader (package binds)
@@ -695,11 +760,12 @@ Otherwise split the current paragraph into one sentence per line."
         (delete (selected-window) (window-list)))
   (setq new-window
          (or (car available-windows)
-             (split-window-right)
-             (split-window-sensibly)))
+             (split-window-sensibly)
+             (split-window-below)))
   (select-window new-window)
   (org-id-open path _)
-  (evil-window-move-far-right))
+  ;(evil-window-move-far-right)
+  )
 (defun ndu/org-drill-time-to-inactive-org-timestamp (time)
   "Convert TIME into org-mode timestamp."
   (format-time-string
@@ -735,20 +801,28 @@ Otherwise split the current paragraph into one sentence per line."
                     org-level-5))
       (set-face-attribute face nil :weight 'regular :height 1.0))
     (ndu/set-hooks '(;(org-mode-hook (turn-on-org-cdlatex))
-                     (org-mode-hook (auto-complete-mode))
+                     ;(org-mode-hook (auto-complete-mode))
                      (org-mode-hook (vanish-mode))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("q" "note" plain (file+headline "~/org/gtd.org" "Notes")
-             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
+          `(("w" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
+             "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("e" "topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
-             "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
+             ;; "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
+             "** %?%(org-set-tags \"drill:topic\")\n"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("r" "item" plain (file+headline "~/org/misc-notes-items.org" "Items")
              "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("t" "todo" plain (file+headline "~/org/gtd.org" "Inbox")
-                        "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)))
+            ("a" "note" plain (file+headline "~/org/gtd.org" "Notes")
+             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("s" "task topic" plain (file+headline "~/org/gtd.org" "Task topics")
+             "%(ndu/insert-task-topic-item)\n   %?"
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("d" "task item" plain (file+headline "~/org/gtd.org" "Task items")
+             "%(ndu/insert-task-topic-item)\n   %?"
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)))
+    (add-hook 'org-capture-after-finalize-hook 'ndu/align-tags)
     (setq-default
      org-sticky-header-full-path 'reversed
      org-sticky-header-always-show-header nil
@@ -1088,13 +1162,13 @@ Otherwise split the current paragraph into one sentence per line."
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (use-package nov
     :mode ("\\.epub\\'" . ndu/nov-mode))
-  ;(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
   (ndu/set-leader
     'anki-editor
-    '(("on" ndu/insert-topic)                ("om" ndu/insert-item)
-      ("oz" ndu/buffer-backlinks)            ("ox" ndu/entry-backlinks)
-      ("oc" ndu/update-backlink-description) ("ov" ndu/convert-cloze)
-      ("oC" ndu/insert-backlink-description)
+    '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
+      ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
+      ("oc" ndu/add-cached-tag)              ("oC" ndu/removed-cached-tag)
+      ("ob" ndu/insert-blocks-table)         ("oB" ndu/insert-blocks-task)
+      ("ot" ndu/insert-topic-table)          ("oT" ndu/insert-item-table)
       ("oq" ndu/org-drill-todo)              ("ow" ndu/org-cram-todo)
       ("oe" ndu/org-drill-todo-tree)         ("or" ndu/org-cram-todo-tree)
       ("oh" ndu/org-drill-topic)             ("oj" ndu/org-drill-item)
@@ -1104,16 +1178,16 @@ Otherwise split the current paragraph into one sentence per line."
       ("oa" ndu/org-drill)                   ("os" ndu/org-cram)
       ("od" ndu/org-drill-tree)              ("of" ndu/org-cram-tree)
       ("o," ndu/cloze-region-auto-incr)      ("o." ndu/cloze-region-dont-incr)
-      ("o/" anki-editor-latex-region)        ("ot" ndu/insert-progress-tree)
-      ("og" ndu/org-screenshot-anki)         ("ob" ndu/insert-progress-buffer)
-      ("ou" anki-editor-retry-failure-notes) ("oi" ndu/push-notes)
-      ("oo" org-table-expand)                ("oO" org-table-shrink)
-      ("op" ndu/org-screenshot-regular)
-      ("oY" ndu/insert-last-stored-link)     ("oy" org-store-link)
+      ("o/" anki-editor-latex-region)        ("ov" ndu/insert-progress-tree)
+      ("og" ndu/align-tags)                  ("oV" ndu/insert-progress-buffer)
+      ("ou" anki-editor-retry-failure-notes) ("oi" ndu/update-tables)
+      ("oo" org-capture)                     ("oO" vanish-mode)
+      ("op" org-table-expand)                ("oP" org-table-shrink)
+      ("oY"  ndu/insert-last-stored-link)    ("oy" org-store-link)
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
-      ("o," ndu/related-insert)              ("o." ndu/related-append)
+      ("o,"  ndu/related-insert)             ("o." ndu/related-append)
       ("o<"  org-drill-resume)               ("o>" org-drill-again)
       ("o'"  ndu/insert-link)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
@@ -1128,10 +1202,7 @@ Otherwise split the current paragraph into one sentence per line."
     "t" 'nov-goto-toc)
   (when (fboundp 'imagemagick-register-types)
    (imagemagick-register-types))
-  ;(add-to-list 'mu4e-headers-actions
-  ; '("View in browser" . mu4e-action-view-in-browser) t)
   (advice-add 'play-sound :around 'my/play-sound)
-  ; (load "~/.emacs.d/manuallyInstalled/ed-mode.el")
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
@@ -1144,22 +1215,17 @@ Otherwise split the current paragraph into one sentence per line."
     auto-save-default t
     visual-fill-column-center-text t
     vterm-always-compile-module t
-    ;olivetti-style 'fancy
-    ;olivetti-body-width 86
-    ;writeroom-width 86
     org-use-property-inheritance t
-    ;olivetti-margin-width 5
     nov-text-width 60
     org-id-link-to-org-use-id 'create-if-interactive
     org-adapt-indentation t
-    ; org-odd-levels-only t
     c-default-style "k&r"
     c-basic-offset 4
     org-hide-emphasis-markers t
     org-startup-with-inline-images t
     org-startup-folded 'showall
-    org-image-actual-width nil ; images requre size attribute
-    whitespace-line-column 80                     ; After 79 chars,
+    org-image-actual-width nil                   ; images requre size attribute
+    whitespace-line-column 80                    ; After 79 chars,
     whitespace-style '(face) ;'(face lines-tail) ; highlight columns.
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
@@ -1171,8 +1237,6 @@ Otherwise split the current paragraph into one sentence per line."
     org-lowest-priority  ?E
     org-default-priority org-lowest-priority
     git-magit-status-fullscreen t
-    ;vc-follow-symlinks t
-    ;helm-full-frame t
     c-c++-lsp-enable-semantic-highlight t)
   (ndu/set-hooks '((c++-mode-hook (lsp))))
   (global-visual-line-mode t)
@@ -1180,9 +1244,6 @@ Otherwise split the current paragraph into one sentence per line."
   (evil-define-minor-mode-key 'motion 'visual-line-mode "^" 'evil-first-non-blank-of-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "j" 'evil-next-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "k" 'evil-previous-visual-line)
-  ;; Adaptive wrap anyways needs the `visual-line-mode' to be enabled. So
-  ;; enable it only when the latter is enabled.
-  ;(add-hook 'visual-line-mode-hook #'adaptive-wrap-prefix-mode)
   (global-set-key (kbd "M-q") 'ndu/fill-paragraph)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on
@@ -1199,17 +1260,15 @@ Otherwise split the current paragraph into one sentence per line."
            ndu/elfeed-mode))
   ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
-  (remove-hook 'find-file-hooks 'vc-refresh-state)
-  (remove-hook 'find-file-hooks 'projectile-find-file-hook-function)
-  (remove-hook 'find-file-hooks 'yas-global-mode-check-buffers)
-  (remove-hook 'find-file-hooks 'global-flycheck-mode-check-buffers)
-  (remove-hook 'find-file-hooks 'undo-tree-load-history-from-hook)
-  (remove-hook 'find-file-hook 'projectile-find-file-hook-function)
-  (remove-hook 'find-file-hook 'global-flycheck-mode-check-buffers)
-  (remove-hook 'find-file-hook 'yas-global-mode-check-buffers)
-  (remove-hook 'find-file-hook 'undo-tree-load-history-from-hook)
-  (ndu/set-keys '(("C-<"  #'ndu/update-tables)
-                  ("C->" #'counsel-outline)
-                  ("C-;" #'follow-delete-other-windows-and-split)
+  (mapc (lambda (hook) (remove-hook 'find-file-hook hook))
+        '(vc-refresh-state projectile-find-file-hook-function yas-global-mode-check-buffers
+          global-flycheck-mode-check-buffers undo-tree-load-history-from-hook
+          projectile-find-file-hook-function global-flycheck-mode-check-buffers
+          yas-global-mode-check-buffers undo-tree-load-history-from-hook))
+  (ndu/set-keys '(("C-<" #'ndu/quit-follow-mode-and-quit)
+                  ("C->" #'follow-delete-other-windows-and-split)
+                  ("C-;" #'counsel-outline)
                   ("C-:" #'ndu/quit-follow-mode)) t)
-  (find-file "~/org/gtd.org"))
+  (find-file "~/org/misc-notes-items.org")
+  (find-file "~/org/gtd.org")
+  (vanish-set-hide 'tblfm t))
