@@ -864,7 +864,9 @@ Otherwise split the current paragraph into one sentence per line."
                            (?E . (:foreground "MediumAquamarine" :weight bold)))))
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (org-copy-face 'org-todo 'org-checkbox-statistics-todo
-                 "Face used for unfinished checkbox statistics."))
+                 "Face used for unfinished checkbox statistics.")
+  (spacemacs/set-leader-keys-for-major-mode 'org-mode "n" 'next-error)
+  (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" 'org-match-sparse-tree))
 (defun ndu/latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
