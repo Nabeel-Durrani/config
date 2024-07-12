@@ -102,6 +102,12 @@
         vanish-exprs))
 (provide 'vanish)
 (require 'vanish)
+(defun ndu/set-confidence ()
+  (interactive)
+  (let ((confidence (ndu/sum-str-to-num (list (org-table-get-remote-range "constantsTable" "@3$3")
+                                              (read-from-minibuffer "Confidence (1 (high) to 5 (low)): ")))))
+    (org-set-property "CONFIDENCE"
+                      (number-to-string confidence))))
 (defun ndu/remove-tag (tag)
   (interactive)
   (org-set-tags (delete tag (org-get-tags))))
@@ -145,7 +151,7 @@
            spaces "| I-TBL | U-IMP | U-UGH | S-EFF | I-PRI | PROG | TSK | TSK-PRI |" "\n"
            spaces "| <0>   | <0>   | <0>   | <0>   | <0>   | <0>  | <0> | <0>     |" "\n"
            spaces "|-------+-------+-------+-------+-------+------+-----+---------|" "\n"
-           spaces "|       |       |       |       |       |      |     |         |" "\n"
+           spaces "|       | 0     | 0     | 0     | 0     | 0    | 0   | 0       |" "\n"
            spaces "#+TBLFM: "
                   "$2=vmean(remote($1, @I$2..@>$2);%.2f::"
                   "$3=vmean(remote($1, @I$3..@>$3);%.2f::"
@@ -165,11 +171,11 @@
                     spaces "| TSK | IMP | UGH | TIM | BLK | DONE | EFF | PRI | PRI-N |" "\n"
                     spaces "| <0> | <0> | <0> | <0> | <0> | <0>  | <0> | <0> | <0>   |" "\n"
                     spaces "|-----+-----+-----+-----+-----+------+-----+-----+-------|" "\n"
-                    spaces "|     |     |     |     |     |      |     |     |       |" "\n"
+                    spaces "|     |     |     |     | 0   | 0    | 0   | 0   | 0     |" "\n"
                     spaces "#+TBLFM: "
                            "$5='(ndu/get-blocks" " " "\"" blocksTbl "\"" " " "\"" blocksTsk "\"" " " "$1)::"
                            "$7=(1-$6)*min(exp(4*min(vsum(@3$5..@>$5), 5))*$4,100);%.2f::"
-                           "$8=((1-$5)*(1-$6)*($2*$3^(remote(const_tbl,@I$3)))^(1/3)/($7 + 0.1*$6);%.2f::"
+                           "$8=((1-$5)*(1-$6)*($2*$3^(remote(constantsTable,@I$3)))^(1/3)/($7 + 0.1*$6);%.2f::"
                            "$9=5*$8/vmax(@3$8..@>$8);%.1f"))))
 (defun ndu/insert-task-topic-item ()
   (interactive)
@@ -773,6 +779,7 @@ Otherwise split the current paragraph into one sentence per line."
 (defun ndu/org-mode ()
   ;; bug in org-drill
   (require 'org-drill)
+  (require 'org-collector)
   (advice-add 'org-drill-time-to-inactive-org-timestamp :override #'ndu/org-drill-time-to-inactive-org-timestamp)
   (add-hook 'org-mode-hook
    '(lambda ()
@@ -818,7 +825,7 @@ Otherwise split the current paragraph into one sentence per line."
              "%(ndu/insert-task-topic-item)\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("d" "task item" plain (file+headline "~/org/gtd.org" "Task items")
-             "%(ndu/insert-task-topic-item)\n   %?"
+             "%(ndu/insert-task-topic-item)%(org-set-property \"CONFIDENCE\" \"5\")\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)))
     (add-hook 'org-capture-after-finalize-hook 'ndu/align-tags)
     (setq-default
@@ -960,13 +967,12 @@ Otherwise split the current paragraph into one sentence per line."
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(ansi-color anki-editor rg
-                                       org-drill org-tidy ;adaptive-wrap
-                                       evil-smartparens cdlatex vterm
+                                       org-drill org-tidy
+                                       evil-smartparens cdlatex
                                        latex-extra latex-math-preview
-                                       wordnut matlab-mode
-                                       nov ;olivetti
-                                       hydra lsp-mode lsp-ui
-                                      (evil-ediff :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
+                                       hydra lsp-mode lsp-ui ;nov
+                                      (evil-ediff
+                                       :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
                                        ccls)
     ;; A list of packages and/or extensions that will not be install and loaded
     dotspacemacs-excluded-packages '(org-projectile)
@@ -1189,7 +1195,7 @@ Otherwise split the current paragraph into one sentence per line."
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
-      ("o,"  ndu/related-insert)             ("o." ndu/related-append)
+      ("o,"  evil-numbers/dec-at-pt)         ("o." ndu/set-confidence)
       ("o<"  org-drill-resume)               ("o>" org-drill-again)))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
     "g" 'nov-render-document
