@@ -102,6 +102,86 @@
         vanish-exprs))
 (provide 'vanish)
 (require 'vanish)
+(defun ndu/previous-match ()
+  (interactive)
+  (previous-error)
+  (org-show-entry))
+(defun ndu/next-match ()
+  (interactive)
+  (next-error)
+  (org-show-entry))
+(defun ndu/unsplit-table-field ()
+  (interactive)
+  (ndu/table-field-split-unsplit "\n" "^"))
+(defun ndu/split-table-field ()
+  (interactive)
+  (ndu/table-field-split-unsplit "\\^" "\n"))
+(defun ndu/table-field-split-unsplit (delim1 delim2)
+  (interactive)
+  (unless (not (string= "*Org Table Edit Field*" (buffer-name)))
+    (save-excursion
+        (beginning-of-buffer)
+        (kill-matching-lines "^#.*$")
+        (let ((buf (buffer-string)))
+          (kill-matching-lines ".*")
+          (insert (mapconcat 'identity
+                            (split-string buf delim1)
+                            delim2))))))
+(defun ndu/edit-field ()
+  (interactive)
+  (if (org-at-table-p)
+    (progn
+      (ndu/shrink)
+      (split-window-horizontally)
+      (org-table-edit-field nil)
+      (ndu/split-table-field))
+    (progn ; If we're already in the org-table-edit-field buffer
+      (ndu/unsplit-table-field)
+      (org-ctrl-c-ctrl-c)
+      (delete-other-windows)
+      (ndu/shrink))))
+(defun ndu/next-column-edit ()
+  (interactive)
+  (ndu/next-edit-field #'evil-next-line #'evil-previous-line))
+(defun ndu/next-row-edit ()
+  (interactive)
+  (ndu/next-edit-field #'org-cycle #'org-shifttab))
+(defun ndu/next-edit-field (next-fn prev-fn)
+  (interactive)
+  (ndu/unsplit-table-field)
+  (org-ctrl-c-ctrl-c)
+  (ndu/shrink)
+  (save-excursion
+    (funcall next-fn)
+    (unless (org-at-table-p)
+        (progn
+          (funcall prev-fn)
+          (org-table-insert-row 1))))
+  (funcall next-fn)
+  (org-table-edit-field nil)
+  (ndu/split-table-field))
+(defun ndu/expand ()
+  (interactive)
+  (spacemacs/toggle-truncate-lines-on)
+  (org-table-expand)
+  (ndu/show-tbmlfm))
+(defun ndu/expand-all ()
+  (interactive)
+  (spacemacs/toggle-truncate-lines-on)
+  (org-table-map-tables #'org-table-expand t)
+  (org-table-map-tables #'org-table-align t)
+  (ndu/show-tbmlfm))
+(defun ndu/shrink ()
+  (interactive)
+  (spacemacs/toggle-truncate-lines-off)
+  (ndu/hide-tbmlfm)
+  (org-table-shrink))
+(defun ndu/shrink-all ()
+  (interactive)
+  (spacemacs/toggle-truncate-lines-off)
+  (org-table-map-tables #'org-table-shrink t)
+  (org-table-map-tables #'org-table-align t)
+  (ndu/hide-tbmlfm))
 (defun ndu/set-confidence ()
   (interactive)
   (let ((confidence (ndu/sum-str-to-num (list (org-table-get-remote-range "constantsTable" "@3$3")
@@ -130,6 +210,7 @@
   (newline-and-indent)
   (setq spaces (make-string (current-column) ?\s))
   (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
+           spaces "| <10>  | <10>  | <10>  | <3> |"     "\n"
            spaces "| I-TBL | I-TSK | B-TBL | BLK |"     "\n"
            spaces "|-------+-------+-------+-----|"     "\n"
            spaces "|       |       |       |     |")))
@@ -139,6 +220,7 @@
   (newline-and-indent)
   (setq spaces (make-string (current-column) ?\s))
   (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
+                  spaces "| <10>  | <10>  | <3> |"      "\n"
                   spaces "| I-TBL | B-TBL | BLK |"      "\n"
                   spaces "|-------+-------+-----|"      "\n"
                   spaces "|       |       |     |")))
@@ -148,10 +230,10 @@
   (newline-and-indent)
   (setq spaces (make-string (current-column) ?\s))
   (insert (concat "#+NAME: " (org-entry-get nil "ITEM")                              "\n"
+           spaces "| <10>  | <0>   | <0>   | <0>   | <7>   | <0>  | <0> | <6>     |" "\n"
            spaces "| I-TBL | U-IMP | U-UGH | S-EFF | I-PRI | PROG | TSK | TSK-PRI |" "\n"
-           spaces "| <0>   | <0>   | <0>   | <0>   | <0>   | <0>  | <0> | <0>     |" "\n"
            spaces "|-------+-------+-------+-------+-------+------+-----+---------|" "\n"
-           spaces "|       | 0     | 0     | 0     | 0     | 0    | 0   | 0       |" "\n"
+           spaces "|       |       |       |       |       |      |     |         |" "\n"
            spaces "#+TBLFM: "
                   "$2=vmean(remote($1, @I$2..@>$2);%.2f::"
                   "$3=vmean(remote($1, @I$3..@>$3);%.2f::"
@@ -168,14 +250,16 @@
         (blocksTbl (read-from-minibuffer "Blocking items table: " nil nil nil nil "blocksTbl"))
         (blocksTsk (read-from-minibuffer "Blocking tasks table: " nil nil nil nil "blocksTsk")))
     (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
-                    spaces "| TSK | IMP | UGH | TIM | BLK | DONE | EFF | PRI | PRI-N |" "\n"
-                    spaces "| <0> | <0> | <0> | <0> | <0> | <0>  | <0> | <0> | <0>   |" "\n"
-                    spaces "|-----+-----+-----+-----+-----+------+-----+-----+-------|" "\n"
-                    spaces "|     |     |     |     | 0   | 0    | 0   | 0   | 0     |" "\n"
+                    spaces "| <0> | <1> | <1> | <1> | <1> | <1>  | <0> | <5> | <0>   | <0>  | <4>  |" "\n"
+                    spaces "| TSK | IMP | UGH | TIM | BLK | DONE | EFF | PRI | PRI-N | MAYB | DESC |" "\n"
+                    spaces "|-----+-----+-----+-----+-----+------+-----+-----+-------+------+------|" "\n"
+                    spaces "|     |     |     |     |     |      |     |     |       |      |      |" "\n"
                     spaces "#+TBLFM: "
+                           "$1=@#-2::"
                            "$5='(ndu/get-blocks" " " "\"" blocksTbl "\"" " " "\"" blocksTsk "\"" " " "$1)::"
                            "$7=(1-$6)*min(exp(4*min(vsum(@3$5..@>$5), 5))*$4,100);%.2f::"
-                           "$8=((1-$5)*(1-$6)*($2*$3^(remote(constantsTable,@I$3)))^(1/3)/($7 + 0.1*$6);%.2f::"
+                           "$8=" "(" "(1-$5)*(1-$6)" "*" "(remote(constantsTable,@5$3)^$10)" "*"
+                           "($2*$3^(remote(constantsTable,@3$3)))^(1/3)/($7 + 0.1*$6);%.2f"
                            "$9=5*$8/vmax(@3$8..@>$8);%.1f"))))
 (defun ndu/insert-task-topic-item ()
   (interactive)
@@ -238,29 +322,24 @@ Return the list of results."
         (checksum (md5 (buffer-string)))
         c1)
     (org-with-wide-buffer
-    (catch 'exit
-      (while (> i 0)
-        (setq i (1- i))
-        (org-table-map-tables
-          (lambda ()
-            (unless (member "cached" (org-get-tags))
-              (org-table-recalculate t t)))
-          t)
-        (if (equal checksum (setq c1 (md5 (buffer-string))))
-            (progn
-              (org-table-map-tables #'org-table-align t)
-              (message "Convergence after %d iterations" (- imax i))
-              (throw 'exit t))
-          (setq checksum c1)))
-      (org-table-map-tables #'org-table-align t)
-      (user-error "No convergence after %d iterations" imax)))))
-(defun ndu/quit-follow-mode-and-quit ()
-  (interactive)
-  (evil-quit)
-  (follow-mode -1))
-(defun ndu/quit-follow-mode ()
-  (interactive)
-  (follow-mode -1))
+      (catch 'exit
+        (while (> i 0)
+          (setq i (1- i))
+          (org-table-map-tables
+            (lambda ()
+              (unless (member "cached" (org-get-tags))
+                (org-table-recalculate t t)))
+            t)
+          (if (equal checksum (setq c1 (md5 (buffer-string))))
+              (progn
+                (org-table-map-tables #'org-table-align t)
+                (ndu/hide-tbmlfm)
+                (message "Convergence after %d iterations" (- imax i))
+                (throw 'exit t))
+            (setq checksum c1)))
+        (org-table-map-tables #'org-table-align t)
+        (ndu/hide-tbmlfm)
+        (user-error "No convergence after %d iterations" imax)))))
 (defun ndu/insert-last-stored-link ()
   (require 'org)
   (interactive)
@@ -276,12 +355,10 @@ Return the list of results."
 (defun ndu/prioritize-drill (drill-fn scope match-fn)
  (require 'org-drill)
  (interactive)
- (setq-default org-sticky-header-always-show-header t)
  (let* ((tag (read-from-minibuffer "+tag_1...+tag_N: "))
         (fn (lambda (y) (funcall drill-fn scope (funcall match-fn y tag)))))
    (mapcar (lambda (x) (ndu/run-if-priority fn x))
-           '("E"))) ; E is default - can change this to "A" "B" "C" "D" "E"
- (setq-default org-sticky-header-always-show-header nil))
+           '("E")))) ; E is default - can change this to "A" "B" "C" "D" "E")
 (defun ndu/set-startup-visibility ()
   (interactive)
   (org-set-startup-visibility))
@@ -765,12 +842,12 @@ Otherwise split the current paragraph into one sentence per line."
         (delete (selected-window) (window-list)))
   (setq new-window
          (or (car available-windows)
+             (split-window-right)
              (split-window-sensibly)
-             (split-window-below)))
+             ))
   (select-window new-window)
   (org-id-open path _)
-  ;(evil-window-move-far-right)
-  )
+  (evil-window-move-far-right))
 (defun ndu/org-drill-time-to-inactive-org-timestamp (time)
   "Convert TIME into org-mode timestamp."
   (format-time-string
@@ -806,11 +883,11 @@ Otherwise split the current paragraph into one sentence per line."
                     org-level-5))
       (set-face-attribute face nil :weight 'regular :height 1.0))
     (ndu/set-hooks '(;(org-mode-hook (turn-on-org-cdlatex))
-                     ;(org-mode-hook (auto-complete-mode))
+                     (org-mode-hook (visual-fill-column-mode))
                      (org-mode-hook (vanish-mode))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("w" "todo" plain (file+headline "~/org/gtd.org" "Tasks")
+          `(("w" "todo" plain (file+headline "~/org/gtd.org" "Now")
              "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("e" "topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
              ;; "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
@@ -828,9 +905,10 @@ Otherwise split the current paragraph into one sentence per line."
              "%(ndu/insert-task-topic-item)%(org-set-property \"CONFIDENCE\" \"5\")\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)))
     (add-hook 'org-capture-after-finalize-hook 'ndu/align-tags)
+    (add-hook 'org-mode-hook '(lambda ()
+                                (setq-local header-line-format (list '(:eval (substring-no-properties
+                                                                              (org-table-get-field)))))))
     (setq-default
-     org-sticky-header-full-path 'reversed
-     org-sticky-header-always-show-header nil
      org-table-automatic-realign nil ; less frenetic editing of tables. Align using C-c C-c
      org-emphasis-alist '(("*" bold)
                           ("/" italic)
@@ -871,8 +949,8 @@ Otherwise split the current paragraph into one sentence per line."
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (org-copy-face 'org-todo 'org-checkbox-statistics-todo
                  "Face used for unfinished checkbox statistics.")
-  (spacemacs/set-leader-keys-for-major-mode 'org-mode "n" 'next-error)
-  (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" 'org-match-sparse-tree))
+  (spacemacs/set-leader-keys-for-major-mode 'org-mode "n" 'ndu/previous-match)
+  (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" 'ndu/next-match))
 (defun ndu/latex ()
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
@@ -882,10 +960,7 @@ Otherwise split the current paragraph into one sentence per line."
   ;; note: support for this environment is only partial if auctex sees
   ;; the 'usepackage' macro for it - need following code for full support
   (ndu/set-hooks '((LaTeX-mode-hook ((lambda () (setq evil-shift-width 2))
-                                     add-envs))
-                   ;(LaTeX-mode-hook (olivetti-mode))
-                   ;(LaTeX-mode-hook (writeroom-mode))
-                   ))
+                                     add-envs))))
   (setq-default
     font-latex-math-environments '("display" "displaymath" "equation"
                                     "eqnarray" "gather" "multline" "align"
@@ -938,9 +1013,7 @@ Otherwise split the current paragraph into one sentence per line."
     ;; List of configuration layers to load. If it is the symbol `all' instead
     ;; of a list then all discovered layers will be installed.
     dotspacemacs-configuration-layers
-    '(html osx (org :variables org-enable-sticky-header t ;org-enable-valign t
-                    )
-           git pdf ivy
+    '(html osx org git pdf ivy
       (shell :variables shell-default-shell 'eshell)
       (auto-completion
        :variables spacemacs-default-company-backends '(company-files
@@ -955,10 +1028,6 @@ Otherwise split the current paragraph into one sentence per line."
       dap emacs-lisp elfeed ;mu4e semantic themes-megapack
       csv python ess clojure scheme octave
       (latex :variables latex-build-command "LaTeX")
-      ;(mu4e :variables mu4e-use-maildirs-extension t)
-      ;(mu4e :variables mu4e-enable-notifications t)
-      ;(shell :variables shell-enable-smart-Eshell t)
-      ;(elfeed :variables elfeed-enable-web-interface t)
       (elfeed :variables elfeed-enable-goodies nil)
       (elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
 	    (spell-checking :variables spell-checking-enable-by-default nil))
@@ -1121,22 +1190,7 @@ Otherwise split the current paragraph into one sentence per line."
   "Initialization function for user code.
    It is called immediately after `dotspacemacs/init'.  You are free to put any
    user code."
-  (setq-default
-     line-spacing 40 ; space between lines
-     ;mu4e-maildir "~/mail/mbsyncmail"
-     ;mu4e-get-mail-command "mbsync -c ~/.emacs.d/.mbsyncrc -a"
-     ;mu4e-index-update-in-background t
-     ;mu4e-update-interval 120
-     ;mu4e-headers-auto-update t
-     ;mu4e-attachment-dir "~/Downloads"
-     ;mu4e-drafts-folder "/Drafts"
-     ;mu4e-sent-folder   "/Sent Items"
-     ;mu4e-trash-folder  "/Deleted Items"
-     ;mu4e-view-show-images t
-     ;mu4e-enable-notifications t
-     )
-  ;(with-eval-after-load 'mu4e-alert
-  ;  (mu4e-alert-set-default-style 'libnotify))
+  (setq-default line-spacing 40)
   (define-key key-translation-map (kbd "C-<escape>") (kbd "ESC"))
   (define-key key-translation-map (kbd "ESC") (kbd "C-C C-G"))
   (global-set-key (kbd "C-c C-g") 'evil-escape))
@@ -1185,12 +1239,12 @@ Otherwise split the current paragraph into one sentence per line."
       ("oa" ndu/org-drill)                   ("os" ndu/org-cram)
       ("od" ndu/org-drill-tree)              ("of" ndu/org-cram-tree)
       ("o," ndu/cloze-region-auto-incr)      ("o." ndu/cloze-region-dont-incr)
-      ("o/" anki-editor-latex-region)        ("ov" ndu/insert-progress-tree)
-      ("og" ndu/align-tags)                  ("oV" ndu/insert-progress-buffer)
+      ("o/" anki-editor-latex-region)        ("ov" ndu/expand)
+      ("og" ndu/align-tags)                  ("oV" ndu/expand-all)
       ("ou" anki-editor-retry-failure-notes) ("o'"  ndu/insert-link)
       ("oi" ndu/update-tables)               ("oI" org-table-edit-formulas)
       ("oo" org-capture)                     ("oO" vanish-mode)
-      ("op" org-table-expand)                ("oP" org-table-shrink)
+      ("op" ndu/shrink)                      ("oP" ndu/shrink-all)
       ("oY"  ndu/insert-last-stored-link)    ("oy" org-store-link)
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
@@ -1213,6 +1267,7 @@ Otherwise split the current paragraph into one sentence per line."
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
+    org-tags-column -50
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
     spacemacs-yank-indent-threshold 0
@@ -1239,6 +1294,8 @@ Otherwise split the current paragraph into one sentence per line."
     rg-command-line-flags '("--before-context=1")
     flycheck-indication-mode 'left-fringe
     evil-use-y-for-yank t
+    maximum-scroll-margin 0.5
+    scroll-margin 20
     org-use-property-inheritance t
     org-highest-priority ?A
     org-lowest-priority  ?E
@@ -1247,6 +1304,7 @@ Otherwise split the current paragraph into one sentence per line."
     c-c++-lsp-enable-semantic-highlight t)
   (ndu/set-hooks '((c++-mode-hook (lsp))))
   (global-visual-line-mode t)
+  (setq-default truncate-partial-width-windows nil)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "$" 'evil-end-of-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "^" 'evil-first-non-blank-of-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "j" 'evil-next-visual-line)
@@ -1272,10 +1330,10 @@ Otherwise split the current paragraph into one sentence per line."
           global-flycheck-mode-check-buffers undo-tree-load-history-from-hook
           projectile-find-file-hook-function global-flycheck-mode-check-buffers
           yas-global-mode-check-buffers undo-tree-load-history-from-hook))
-  (ndu/set-keys '(("C-<" #'ndu/quit-follow-mode-and-quit)
-                  ("C->" #'follow-delete-other-windows-and-split)
-                  ("C-;" #'counsel-outline)
-                  ("C-:" #'ndu/quit-follow-mode)) t)
+  (ndu/set-keys '(("C-<"    #'ndu/next-row-edit)
+                  ("C->"    #'ndu/next-column-edit)
+                  ("C-;"    #'counsel-outline)
+                  ("C-:"    #'org-match-sparse-tree)) t)
   (find-file "~/org/misc-notes-items.org")
   (find-file "~/org/gtd.org")
   (vanish-set-hide 'tblfm t))
