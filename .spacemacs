@@ -125,6 +125,16 @@
            spaces "| I-TBL | I-TSK | B-TBL | BLK |"     "\n"
            spaces "|-------+-------+-------+-----|"     "\n"
            spaces "|       |       |       |     |")))
+(defun ndu/insert-incipit-table ()
+  (interactive)
+  (move-end-of-line 1)
+  (newline-and-indent)
+  (setq spaces (make-string (current-column) ?\s))
+  (insert (concat        "| <35> | <5> |" "\n"
+                  spaces "|------+-----|" "\n"
+                  spaces "|      |     |"))
+  (org-shifttab)
+  (org-shifttab))
 (defun ndu/insert-blocks-table ()
   (interactive)
   (move-end-of-line 1)
@@ -868,7 +878,7 @@ Return the list of results."
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
       ("o,"  evil-numbers/dec-at-pt)         ("o." ndu/set-confidence)
       ("o<"  org-drill-resume)               ("o>" org-drill-again)
-      ("oo" org-capture)))
+      ("oo" org-capture)                     ("oj" ndu/insert-incipit-table)))
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
