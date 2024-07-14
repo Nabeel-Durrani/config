@@ -1,18 +1,3 @@
-(defun ndu/anki-editor ()
-  (use-package anki-editor
-        :after org
-        :bind (:map org-mode-map
-                    ("<f12>" . ndu/cloze-region-auto-incr)
-                    ("<f11>" . ndu/cloze-region-dont-incr)
-                    ("<f10>" . ndu/reset-cloze-number)
-                    ("<f9>"  . ndu/push-notes))
-        :hook (org-capture-after-finalize . ndu/reset-cloze-number) ; Reset cloze-number after each capture.
-        :config
-        ; Allow anki-editor to create a new deck if it doesn't exist
-        (setq anki-editor-create-decks t
-              anki-editor-org-tags-as-anki-tags t)
-        ;; Initialize
-        (ndu/reset-cloze-number)))
 (defun ndu/previous-match ()
   (interactive)
   (previous-error)
@@ -118,12 +103,25 @@
 (defun ndu/add-cached-tag ()
   (interactive)
   (ndu/add-tag "cached"))
+(defun ndu/add-leit-tag-to-leit ()
+  (interactive)
+  (org-map-entries #'ndu/remove-leit-tag "leit")
+  (org-map-entries #'ndu/add-leit-tag "leit")
+  (ndu/align-tags))
 (defun ndu/add-leitner-tag ()
   (interactive)
   (ndu/add-tag "leitner"))
 (defun ndu/remove-leitner-tag ()
   (interactive)
-  (ndu/remove-tag "leitner"))
+  (ndu/remove-tag "leitner")
+  (org-delete-property "DRILL_LEITNER_BOX")
+  (org-delete-property "ID"))
+(defun ndu/add-leit-tag ()
+  (interactive)
+  (ndu/add-tag "leit"))
+(defun ndu/remove-leit-tag ()
+  (interactive)
+  (ndu/remove-tag "leit"))
 (defun ndu/align-tags ()
   (interactive)
   (org-set-tags-command '(4))) ; '(4) is the universal argument
@@ -281,52 +279,9 @@ Return the list of results."
   (interactive)
    (concat "** " (format-time-string "I-%Y-%m-%d-%H-%M-%S")))
 ;; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
-(defun ndu/convert-cloze ()
-  "Convert an org-drill Cloze card to one compatible with anki-editor."
-  (require 'anki-editor)
-  (require 'org-drill)
-  (interactive)
-  (atomic-change-group
-    (org-with-point-at (point)
-      (org-back-to-heading)
-      (org-narrow-to-subtree)
-      (save-excursion
-        (let* ((cloze-count 1)
-               (beginning-marker (make-marker))
-               (end-marker (make-marker))
-               cloze-beginning)
-          (save-excursion
-            (while (re-search-forward org-drill-cloze-regexp nil t)
-              (let ((hint (match-string-no-properties 2)))
-                (unless (string-blank-p hint)
-                  ;; Strip leading hint separator
-                  (setq hint (substring hint
-                                        (length org-drill-hint-separator)
-                                        (length hint)))
-                  ;; Delete hint (with separator)
-                  (delete-region (match-beginning 2)
-                                 (match-end 2))
-                  ;; Move before matched region and retry.
-                  (goto-char (match-beginning 0))
-                  (forward-char -1)
-                  (re-search-forward org-drill-cloze-regexp))
-                (setq cloze-beginning
-                      (+ (match-beginning 0)
-                         (length org-drill-left-cloze-delimiter)))
-                (set-marker beginning-marker cloze-beginning)
-                (set-marker end-marker (match-end 2))
-                (delete-region (match-beginning 3) (match-end 3))
-                (delete-region (match-beginning 0) cloze-beginning)
-                (anki-editor-cloze
-                 (marker-position beginning-marker)
-                 (marker-position end-marker)
-                 cloze-count
-                 hint)
-                (setq cloze-count (+ 1 cloze-count))))))))))
 (defun ndu/open-externally()
  (interactive)
  (shell-command (format (concat "open " (browse-url-url-at-point)))))
-
 (defun ndu/org-screenshot-regular ()
   (interactive)
   (setq filename-short
@@ -341,7 +296,7 @@ Return the list of results."
   (ndu/org-screenshot filename-short filename)
   (org-display-inline-images))
 ;; https://stackoverflow.com/questions/17435995/paste-an-image-on-clipboard-to-emacs-org-mode-file-without-saving-it
-(defun ndu/org-screenshot (filename-short filename &optional anki)
+(defun ndu/org-screenshot (filename-short filename)
   "Take a screenshot into a time stamped unique-named file in the same directory as the org-buffer and insert a link to this file."
   (interactive)
   (unless (file-exists-p (file-name-directory filename))
@@ -355,49 +310,11 @@ Return the list of results."
   (setq spaces (make-string (current-column) ?\s))
   ; insert into file if correctly taken
   (if (file-exists-p filename)
-      (insert (if anki filename-short
-                       (concat "#+NAME: " filename-short "\n"
+      (insert (concat "#+NAME: " filename-short "\n"
                                spaces "#+CAPTION: "
                                (format-time-string "%F" (current-time)) "\n"
                                spaces "#+ATTR_ORG: :width 400\n"
-                               spaces "[[file:" filename "]]")))))
-(defun ndu/cloze-region-auto-incr (&optional arg)
-  "Cloze region without hint and increase card number."
-  (require 'anki-editor)
-  (interactive)
-  (anki-editor-cloze-region my-anki-editor-cloze-number "")
-  (setq my-anki-editor-cloze-number (1+ my-anki-editor-cloze-number))
-  (forward-sexp))
-(defun ndu/cloze-region-dont-incr (&optional arg)
-  "Cloze region without hint using the previous card number."
-  (require 'anki-editor)
-  (interactive)
-  (anki-editor-cloze-region (1- my-anki-editor-cloze-number) "")
-  (forward-sexp))
-(defun ndu/reset-cloze-number (&optional arg)
-  "Reset cloze number to ARG or 1"
-  (require 'anki-editor)
-  (interactive)
-  (setq my-anki-editor-cloze-number (or arg 1)))
-(defun ndu/push-notes ()
-  (require 'anki-editor)
-  (interactive)
-  ;(anki-editor-push-notes '(4)) ; would push all notes under a tree
-  (anki-editor-push-notes)
-  (ndu/reset-cloze-number))
-; https://abizjak.github.io/emacs/2016/03/06/latex-fill-paragraph.html
-(defun org-copy-face (old-face new-face docstring &rest attributes)
-  (unless (facep new-face)
-    (if (fboundp 'set-face-attribute)
-        (progn
-          (make-face new-face)
-          (set-face-attribute new-face nil :inherit old-face)
-          (apply 'set-face-attribute new-face nil attributes)
-          (set-face-doc-string new-face docstring))
-      (copy-face old-face new-face)
-      (if (fboundp 'set-face-doc-string)
-          (set-face-doc-string new-face docstring)))))
-(put 'org-copy-face 'lisp-indent-function 2)
+                               spaces "[[file:" filename "]]"))))
 (defun ndu/view-tag (str)
   "Concat STR with @6-months-ago +unread."
   (concat "@6-months-ago +unread " str))
@@ -441,7 +358,7 @@ Return the list of results."
     ("n" (elfeed-search-set-filter (ndu/view-tag "+tech")) "tech"))
   (add-hook 'eww-after-render-hook 'eww-readable))
 (defun ndu/save-recompile () (interactive) (save-buffer) (recompile))
-(defun ndu/set-leader (package binds)
+(defun ndu/set-leader (binds)
   (mapc (lambda (x)
           (spacemacs/set-leader-keys (car x) (cadr x)))
         binds))
@@ -587,6 +504,7 @@ Return the list of results."
       org-directory "~/org"
       org-agenda-files '("~/org")
       org-drill-cram-hours 0
+      org-drill-leitner-promote-to-drill-p nil
       org-drill-spaced-repetition-algorithm 'sm2
       org-drill-hide-item-headings-p t       ; so priorities not clozed
       org-drill-leech-method nil             ; for reading text
@@ -605,8 +523,6 @@ Return the list of results."
                            (?D . (:foreground "MediumSeaGreen"   :weight bold))
                            (?E . (:foreground "MediumAquamarine" :weight bold)))))
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
-  (org-copy-face 'org-todo 'org-checkbox-statistics-todo
-                 "Face used for unfinished checkbox statistics.")
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "j" #'org-match-sparse-tree)
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "n" #'ndu/previous-match)
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" #'ndu/next-match))
@@ -693,11 +609,11 @@ Return the list of results."
     ;; wrapped in a layer. If you need some configuration for these
     ;; packages then consider to create a layer, you can also put the
     ;; configuration in `dotspacemacs/config'.helm-R
-    dotspacemacs-additional-packages '(ansi-color anki-editor rg
+    dotspacemacs-additional-packages '(ansi-color rg
                                        org-drill org-tidy
                                        evil-smartparens cdlatex
-                                       latex-extra latex-math-preview
-                                       hydra lsp-mode lsp-ui ;nov
+                                       ;latex-extra latex-math-preview
+                                       hydra ;lsp-mode lsp-ui nov
                                       (evil-ediff
                                        :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
                                        ccls)
@@ -862,7 +778,6 @@ Return the list of results."
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (ndu/set-leader
-    'anki-editor
     '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
       ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
       ("ob" ndu/insert-blocks-table)         ("oB" ndu/insert-blocks-task)
@@ -870,7 +785,7 @@ Return the list of results."
       ("oa" org-drill)                       ("os" org-drill-leitner)
       ("oc" ndu/add-cached-tag)              ("oC" ndu/remove-cached-tag)
       ("od" ndu/add-drill-tag)               ("oD" ndu/remove-drill-tag)
-      ("ol" ndu/add-leitner-tag)             ("oL" ndu/remove-leitner-tag)
+      ("ol" ndu/add-leit-tag)                ("oL" ndu/remove-leit-tag)
       ("ov" ndu/expand)                      ("oV" ndu/expand-all)
       ("og" ndu/align-tags)                  ("oG" vanish-mode)
       ("oi" ndu/update-tables)               ("oI" org-table-edit-formulas)
