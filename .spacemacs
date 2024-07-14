@@ -134,7 +134,8 @@
                   spaces "|------+-----|" "\n"
                   spaces "|      |     |"))
   (org-shifttab)
-  (org-shifttab))
+  (org-shifttab)
+  (ndu/edit-field))
 (defun ndu/insert-blocks-table ()
   (interactive)
   (move-end-of-line 1)
