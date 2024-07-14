@@ -106,12 +106,24 @@
   (interactive)
   (setq lst (org-get-tags))
   (org-set-tags (push tag lst)))
-(defun ndu/removed-cached-tag ()
+(defun ndu/remove-drill-tag ()
+  (interactive)
+  (ndu/remove-tag "drill"))
+(defun ndu/add-drill-tag ()
+  (interactive)
+  (ndu/add-tag "drill"))
+(defun ndu/remove-cached-tag ()
   (interactive)
   (ndu/remove-tag "cached"))
 (defun ndu/add-cached-tag ()
   (interactive)
   (ndu/add-tag "cached"))
+(defun ndu/add-leitner-tag ()
+  (interactive)
+  (ndu/add-tag "leitner"))
+(defun ndu/remove-leitner-tag ()
+  (interactive)
+  (ndu/remove-tag "leitner"))
 (defun ndu/align-tags ()
   (interactive)
   (org-set-tags-command '(4))) ; '(4) is the universal argument
@@ -125,17 +137,6 @@
            spaces "| I-TBL | I-TSK | B-TBL | BLK |"     "\n"
            spaces "|-------+-------+-------+-----|"     "\n"
            spaces "|       |       |       |     |")))
-(defun ndu/insert-incipit-table ()
-  (interactive)
-  (move-end-of-line 1)
-  (newline-and-indent)
-  (setq spaces (make-string (current-column) ?\s))
-  (insert (concat        "| <35> | <5> |" "\n"
-                  spaces "|------+-----|" "\n"
-                  spaces "|      |     |"))
-  (org-shifttab)
-  (org-shifttab)
-  (ndu/edit-field))
 (defun ndu/insert-blocks-table ()
   (interactive)
   (move-end-of-line 1)
@@ -538,6 +539,7 @@ Return the list of results."
       (set-face-attribute face nil :weight 'regular :height 1.0))
     (ndu/set-hooks '(;(org-mode-hook (turn-on-org-cdlatex))
                      (org-mode-hook (visual-fill-column-mode))
+                     (org-mode-hook (auto-fill-mode))
                      (org-mode-hook (vanish-mode))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
@@ -584,7 +586,6 @@ Return the list of results."
                               ("DONE" . (:foreground "purple1" :weight bold)))
       org-directory "~/org"
       org-agenda-files '("~/org")
-      ;org-drill-add-random-noise-to-intervals-p t
       org-drill-cram-hours 0
       org-drill-spaced-repetition-algorithm 'sm2
       org-drill-hide-item-headings-p t       ; so priorities not clozed
@@ -864,11 +865,12 @@ Return the list of results."
     'anki-editor
     '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
       ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
-      ("oc" ndu/add-cached-tag)              ("oC" ndu/removed-cached-tag)
       ("ob" ndu/insert-blocks-table)         ("oB" ndu/insert-blocks-task)
       ("ot" ndu/insert-topic-table)          ("oT" ndu/insert-item-table)
-      ("oa" org-drill)                       ("os" org-cram)
-      ("od" org-drill-tree)                  ("of" org-drill-cram-tree)
+      ("oa" org-drill)                       ("os" org-drill-leitner)
+      ("oc" ndu/add-cached-tag)              ("oC" ndu/remove-cached-tag)
+      ("od" ndu/add-drill-tag)               ("oD" ndu/remove-drill-tag)
+      ("ol" ndu/add-leitner-tag)             ("oL" ndu/remove-leitner-tag)
       ("ov" ndu/expand)                      ("oV" ndu/expand-all)
       ("og" ndu/align-tags)                  ("oG" vanish-mode)
       ("oi" ndu/update-tables)               ("oI" org-table-edit-formulas)
@@ -879,7 +881,7 @@ Return the list of results."
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
       ("o,"  evil-numbers/dec-at-pt)         ("o." ndu/set-confidence)
       ("o<"  org-drill-resume)               ("o>" org-drill-again)
-      ("oo" org-capture)                     ("oj" ndu/insert-incipit-table)))
+      ("oo" org-capture)))
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
@@ -918,13 +920,9 @@ Return the list of results."
     org-default-priority org-lowest-priority
     git-magit-status-fullscreen t
     c-c++-lsp-enable-semantic-highlight t)
-  (global-visual-line-mode t)
   (setq-default truncate-partial-width-windows nil)
-  (evil-define-minor-mode-key 'motion 'visual-line-mode "$" 'evil-end-of-visual-line)
-  (evil-define-minor-mode-key 'motion 'visual-line-mode "^" 'evil-first-non-blank-of-visual-line)
-  (evil-define-minor-mode-key 'motion 'visual-line-mode "j" 'evil-next-visual-line)
-  (evil-define-minor-mode-key 'motion 'visual-line-mode "k" 'evil-previous-visual-line)
   (global-set-key (kbd "M-q") 'fill-paragraph)
+  (spacemacs/toggle-visual-line-navigation-globally-on)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on ; ndu/latex ndu/ansi-color ndu/doxymacs
            spacemacs/toggle-highlight-current-line-globally-off
