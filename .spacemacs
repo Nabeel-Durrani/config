@@ -1,107 +1,18 @@
-(defgroup vanish nil
-  "Customization group for `vanish'."
-  :group 'convenience)
-;; Specifications of regions of text to hide.
-(defcustom vanish-exprs
-  `((tblfm . (:key ?f
-                   :start ,(rx bol (* blank) "#+TBLFM:")
-                   :end ,(rx eol)
-                   :name "TBLFM"))
-    (drawer . (:key ?d
-                    :start ,(rx bol (* blank) ":" (* (not ":")) ":" eol)
-                    :end ,(rx bol (* blank) ":END:" eol)
-                    :name "drawer")))
-  "Expressions to hide. Each expression has a :key (the key to press to show/hide), :start and :end as regular expressions to determine the start/end of the element, and a :name."
-  :type '(alist :key-type symbol :value-type (plist :key-type symbol :value-type (choice (character :tag "Keybinding") (regexp :tag "Regex"))))
-  :group 'vanish)
-;; Prefix key for vanish minor mode keymap
-(defcustom vanish-prefix (kbd "C-c v")
-  "Prefix for vanish keymap"
-  :type 'key-sequence
-  :group 'vanish)
-;; Keymap for vanish mode, initially empty, filled on activation
-;; of minor mode.
-(defvar vanish-mode-map (make-sparse-keymap))
-;; Minor mode for vanish.
-(define-minor-mode vanish-mode
-  "Turn on Vanish mode"
-  :lighter " Vanish"
-  :group 'vanish
-  :keymap vanish-mode-map
-  (vanish--initialize vanish-prefix)
-  ;; When vanish mode disabled, show everything that was hidden.
-  (unless vanish-mode (vanish-show-all)))
-;; Buffer-local list of elements that are currently hidden.
-(defvar-local vanish--hidden-elements
-  (list)
-  "Elements currently hidden")
-(defun vanish-set-hide (element hidden)
-  "Hide ELEMENT (symbol) if HIDDEN is t, show if it's nil,"
-    (let* ((element-vanish-expr (cdr (assoc element vanish-exprs)))
-           (vanish-start-re (plist-get element-vanish-expr :start))
-           (vanish-end-re (plist-get element-vanish-expr :end)))
-      (save-excursion
-        (let* ((beg (point-min))
-               (end (point-max)))
-          (goto-char beg)
-          (while (re-search-forward vanish-start-re end t)
-            (save-excursion
-              (beginning-of-line 1)
-              (when (looking-at vanish-start-re)
-                (let* ((start (1- (match-beginning 0)))
-                       (limit (save-excursion
-                                (outline-next-heading)
-                                (point))))
-                  (if (re-search-forward vanish-end-re limit t)
-                      (outline-flag-region start (point-at-eol) hidden)
-                    (user-error "Error"))))))))
-      ;; Set org-cycle-hook
-      (if hidden
-          (add-hook 'org-cycle-hook #'vanish--cycle-hook nil 'local)
-        (remove-hook 'org-cycle-hook #'vanish-cycle-hook 'local))
-
-      ;; Set buffer-local list of hidden elements
-      (if hidden
-          (unless (memq element vanish--hidden-elements) (push element vanish--hidden-elements))
-        (setq vanish--hidden-elements (remove element vanish--hidden-elements)))
-
-      ;; Let the user know what happened
-      (message "%s now %s." (plist-get element-vanish-expr :name) (if (memq element vanish--hidden-elements) "hidden" "shown"))))
-(defun vanish--cycle-hook (&rest _)
-  "Re-hide all currently hidden elements when Org visibility is cycled."
-  (mapc (lambda (e) (vanish-set-hide e t))
-        vanish--hidden-elements))
-(defun vanish-show-all ()
-  "Show all currenltly hidden elements."
-  (mapc (lambda (e) (vanish-set-hide e nil))
-        vanish--hidden-elements))
-(defun vanish-toggle-hide (elem)
-  "Toggle hiding of ELEM."
-  (let ((elem-is-hidden (memq elem vanish--hidden-elements)))
-    (vanish-set-hide elem (not elem-is-hidden))))
-(defun vanish-hide (prefix elem)
-  "Toggle hiding of ELEM if PREFIX is 1, hide if PREFIX <= 0, show if PREFIX > 1."
-  (cond ((= prefix 1)
-         (vanish-toggle-hide elem))
-        ((<= prefix 0)
-         (vanish-set-hide elem nil))
-        ((> prefix 1)
-         (vanish-set-hide elem t))))
-(defun vanish--create-binding (kbd-prefix elem)
-  "Create a binding for ELEM based on its corresponding `:key` in `vanish-exprs`, starting with KBD-PREFIX."
-  (let* ((element-vanish-exp (cdr (assoc elem vanish-exprs)))
-         (element-key (plist-get element-vanish-exp :key))
-         (element-name (plist-get element-vanish-exp :name)))
-    (define-key vanish-mode-map (concat kbd-prefix (char-to-string element-key))
-      `(lambda (prefix)
-         ,(format "Toggle hiding of %s if PREFIX is 1, hide if PREFIX <= 0, show if PREFIX > 1." element-name)
-         (interactive "p") (vanish-hide prefix (quote ,elem))))))
-(defun vanish--initialize (kbd-prefix)
-  "Set up all key bindings starting with KBD-PREFIX"
-  (mapc (lambda (e) (vanish--create-binding kbd-prefix (car e)))
-        vanish-exprs))
-(provide 'vanish)
-(require 'vanish)
+(defun ndu/anki-editor ()
+  (use-package anki-editor
+        :after org
+        :bind (:map org-mode-map
+                    ("<f12>" . ndu/cloze-region-auto-incr)
+                    ("<f11>" . ndu/cloze-region-dont-incr)
+                    ("<f10>" . ndu/reset-cloze-number)
+                    ("<f9>"  . ndu/push-notes))
+        :hook (org-capture-after-finalize . ndu/reset-cloze-number) ; Reset cloze-number after each capture.
+        :config
+        ; Allow anki-editor to create a new deck if it doesn't exist
+        (setq anki-editor-create-decks t
+              anki-editor-org-tags-as-anki-tags t)
+        ;; Initialize
+        (ndu/reset-cloze-number)))
 (defun ndu/previous-match ()
   (interactive)
   (previous-error)
@@ -348,17 +259,6 @@ Return the list of results."
   (kill-line)
   (forward-line -1)
   (end-of-line))
-(defun ndu/run-if-priority (fn priority)
-  (interactive)
-  (if (org-map-entries t (concat "PRIORITY=" "\"" priority "\"") 'agenda)
-      (funcall fn priority)))
-(defun ndu/prioritize-drill (drill-fn scope match-fn)
- (require 'org-drill)
- (interactive)
- (let* ((tag (read-from-minibuffer "+tag_1...+tag_N: "))
-        (fn (lambda (y) (funcall drill-fn scope (funcall match-fn y tag)))))
-   (mapcar (lambda (x) (ndu/run-if-priority fn x))
-           '("E")))) ; E is default - can change this to "A" "B" "C" "D" "E")
 (defun ndu/set-startup-visibility ()
   (interactive)
   (org-set-startup-visibility))
@@ -379,26 +279,8 @@ Return the list of results."
 (defun ndu/insert-backlink-description ()
   (interactive)
   (org-set-property "BACKLINK-DESCRIPTION" (ndu/outline-path)))
-(defun ndu/priority (pri &optional nested)
-  (let ((pri-map-nested '(("A" . "\"A\"")
-                          ("B" . "\"A\"\|PRIORITY=\"B\"")
-                          ("C" . "\"A\"\|PRIORITY=\"B\"\|PRIORITY=\"C\"")
-                          ("D" . "\"A\"\|PRIORITY=\"B\"\|PRIORITY=\"C\"\|PRIORITY=\"D\"")
-                          ("E" . "\"A\"\|PRIORITY=\"B\"\|PRIORITY=\"C\"\|PRIORITY=\"D\"\|PRIORITY=\"E\"")))
-        (pri-map        '(("A" . "\"A\"")
-                          ("B" . "\"B\"")
-                          ("C" . "\"C\"")
-                          ("D" . "\"D\"")
-                          ("E" . "\"E\""))))
-    (cdr (assoc pri (if nested pri-map-nested pri-map)))))
 (defun ndu/insert-topic-item-capture (type)
   (concat "** " type (format-time-string "-%Y-%m-%d-%H-%M-%S")))
-(defun ndu/insert-link-capture ()
- (concat "   :PROPERTIES:\n"
-         "   :LINK-DATE: " (format-time-string "%Y-%m-%d-%H-%M-%S\n")
-         "   :BACKLINK-DESCRIPTION: org-capture\n"
-         "   :LINK: %?\n"
-         "   :END:"))
 (defun ndu/related-append ()
   (interactive)
   (move-end-of-line 1)
@@ -415,22 +297,6 @@ Return the list of results."
   (insert (concat ":RELATED:\n" spaces ":END:"))
   (forward-line -1)
   (ndu/related-append))
-(defun ndu/insert-link ()
-  (interactive)
-  (setq description          (read-from-minibuffer "Description: ")
-        link                 (read-from-minibuffer "Link: "))
-  (org-insert-heading)
-  (setq spaces (make-string (current-column) ?\s))
-  (insert description)
-  (org-set-tags "link")
-  (move-end-of-line 1)
-  (insert " ")
-  (newline-and-indent)
-  (insert (concat        ":PROPERTIES:\n"
-                  spaces ":LINK-DATE: " (format-time-string "%Y-%m-%d-%H-%M-%S\n")
-                  spaces ":BACKLINK-DESCRIPTION: " (ndu/outline-path) "\n"
-                  spaces ":LINK: " link "\n"
-                  spaces ":END:")))
 (defun ndu/insert-item ()
   (interactive)
   (org-insert-heading)
@@ -441,142 +307,6 @@ Return the list of results."
   (org-insert-heading)
   (insert (format-time-string "T-%Y-%m-%d-%H-%M-%S"))
   (org-set-tags "drill:topic"))
-(defun ndu/get-tag-priority-match (&optional priority-noninteractive
-                                             tag-noninteractive)
-  (setq priority (if priority-noninteractive
-                     priority-noninteractive
-                     (read-from-minibuffer "Priority (A-E):"))
-        pri      (concat "+PRIORITY=" (ndu/priority priority))
-        tag      (if tag-noninteractive
-                     tag-noninteractive
-                   (read-from-minibuffer "+tag_1...+tag_N: "))
-        pri-tag  (concat pri tag)
-        pri-pred (if (member priority '("A" "B" "C" "D" "E")) t nil)
-        tag-pred (> (length tag) 0)
-        out-map  '(((nil nil) . nil)
-                   ((nil t)   . tag)
-                   ((t   nil) . pri )
-                   ((t   t)   . pri-tag)))
-  (eval (cdr (assoc (list pri-pred tag-pred) out-map))))
-(defun ndu/get-item-match (&optional priority-noninteractive
-                                     tag-noninteractive)
-  (setq input    (if priority-noninteractive
-                     priority-noninteractive
-                     (read-from-minibuffer "Priority (A-E):"))
-        tag      (if tag-noninteractive
-                     tag-noninteractive
-                   (read-from-minibuffer "+tag_1...+tag_N: "))
-        priority (if (member input '("A" "B" "C" "D" "E"))
-                     (concat "+PRIORITY=" (ndu/priority input))
-                     "")
-        item     "+item")
-  (concat item tag priority))
-(defun ndu/get-topic-match (&optional priority-noninteractive
-                                      tag-noninteractive)
-  (setq input    (if priority-noninteractive
-                     priority-noninteractive
-                     (read-from-minibuffer "Priority (A-E):"))
-        tag      (if tag-noninteractive
-                     tag-noninteractive
-                   (read-from-minibuffer "+tag_1...+tag_N: "))
-        priority (if (member input '("A" "B" "C" "D" "E"))
-                     (concat "+PRIORITY=" (ndu/priority input))
-                     "")
-        topic     "+topic")
-  (concat topic tag priority))
-(defun ndu/get-todo-match (&optional priority-noninteractive
-                                     tag-noninteractive)
-  (setq input    (if priority-noninteractive
-                     priority-noninteractive
-                     (read-from-minibuffer "Priority (A-E):"))
-        tag      (if tag-noninteractive
-                     tag-noninteractive
-                   (read-from-minibuffer "+tag_1...+tag_N: "))
-        priority (if (member input '("A" "B" "C" "D" "E"))
-                     (concat "+PRIORITY="
-                             "\"" input "\"")
-                     "")
-        todo     "+TODO=\"TODO\"")
-  (concat todo tag priority))
-(defun ndu/org-drill ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill nil 'ndu/get-tag-priority-match))
-(defun ndu/org-cram ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill-cram nil 'ndu/get-tag-priority-match))
-(defun ndu/org-drill-tree ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill 'tree 'ndu/get-tag-priority-match))
-(defun ndu/org-cram-tree ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill-cram 'tree 'ndu/get-tag-priority-match))
-(defun ndu/org-drill-topic ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill nil 'ndu/get-topic-match))
-(defun ndu/org-drill-item ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill nil 'ndu/get-item-match))
-(defun ndu/org-cram-topic ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill-cram nil 'ndu/get-topic-match))
-(defun ndu/org-cram-item ()
- (require 'org-drill)
- (interactive)
- (ndu/prioritize-drill 'org-drill-cram nil 'ndu/get-item-match))
-(defun ndu/org-drill-todo ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill nil 'ndu/get-todo-match))
-(defun ndu/org-drill-todo-tree ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill 'tree 'ndu/get-todo-match))
-(defun ndu/org-drill-topic-tree ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill 'tree 'ndu/get-topic-match))
-(defun ndu/org-drill-item-tree ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill 'tree 'ndu/get-item-match))
-(defun ndu/org-cram-topic-tree ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill-cram 'tree 'ndu/get-topic-match))
-(defun ndu/org-cram-item-tree ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill-cram 'tree 'ndu/get-item-match))
-(defun ndu/org-cram-todo ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill-cram nil 'ndu/get-todo-match))
-(defun ndu/org-cram-todo-tree ()
-  (require 'org-drill)
-  (interactive)
-  (ndu/prioritize-drill 'org-drill-cram 'tree 'ndu/get-todo-match))
-(defun ndu/insert-progress-buffer ()
-  (interactive)
-  (org-map-entries 'ndu/insert-progress-tree "-TODO=\"TODO\"-TODO=\"DONE\""))
-(defun ndu/insert-progress-tree ()
-  (interactive)
-  (setq complete   (length (org-map-entries t "+TODO=\"DONE\"" 'tree))
-        incomplete (length (org-map-entries t "+TODO=\"TODO\"" 'tree))
-        total      (+ complete incomplete)
-        progress   (if (> total 0)
-                       (* (/ complete (float total)) 100)
-                       0))
-  (org-entry-put (point) "COMPLETE" (format "%d / %d" complete total))
-  (org-entry-put (point) "PROGRESS" (format "%d%%" progress))
-  (org-entry-put (point)
-                 "LAST-UPDATE" (format-time-string "%Y-%m-%d-%H-%M-%S")))
 ;; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
 (defun ndu/convert-cloze ()
   "Convert an org-drill Cloze card to one compatible with anki-editor."
@@ -623,39 +353,7 @@ Return the list of results."
 (defun ndu/open-externally()
  (interactive)
  (shell-command (format (concat "open " (browse-url-url-at-point)))))
-(defun ndu/org-screenshot-anki ()
-  (interactive)
-  (setq fname-no-extension (make-temp-name (format-time-string "%Y%m%d%H%M%S"))
-        filename-short (concat fname-no-extension ".png")
-        n-copies (- (string-to-number (read-from-minibuffer "# of images: "
-                                                            "2"))
-                    1)
-        save-dir "anki_imgs/"
-        filename (concat save-dir filename-short))
-  (unless (eq n-copies 0)
-    (org-insert-heading)
-    (insert "unoccluded")
-    (newline-and-indent))
-  (setq spaces (make-string (current-column) ?\s))
-  (insert (concat "#+BEGIN_EXPORT html\n" spaces "<p><img src=\""))
-  (ndu/org-screenshot filename-short filename t)
-  (insert "\"><br></p>")
-  (newline-and-indent)
-  (insert "#+END_EXPORT\n")
-  (dotimes (n n-copies)
-    (setq filename-copy-short (concat fname-no-extension "-"
-                                      (number-to-string (+ n 1)) ".png")
-          filename-copy (concat save-dir filename-copy-short))
-      (org-insert-heading)
-      (insert (concat "occlusion" (number-to-string (+ n 1))))
-      (newline-and-indent)
-      (setq spaces (make-string (current-column) ?\s))
-      (insert (concat "#+BEGIN_EXPORT html\n"
-                      spaces
-                      "<p><img src=\"" filename-copy-short "\"><br></p>\n"
-                      spaces "#+END_EXPORT"))
-      (copy-file filename filename-copy)
-      (shell-command (format (concat "open -a krita " filename-copy)))))
+
 (defun ndu/org-screenshot-regular ()
   (interactive)
   (setq filename-short
@@ -738,11 +436,6 @@ Otherwise split the current paragraph into one sentence per line."
               (newline)
               (indent-relative)))))
     (fill-paragraph P))) ; otherwise do ordinary fill paragraph
-(defun my/play-sound (orgin-fn sound)
-  (cl-destructuring-bind (_ _ file) sound
-    (make-process :name (concat "play-sound-" file)
-                  :connection-type 'pipe
-                  :command `("afplay" ,file))))
 (defun org-copy-face (old-face new-face docstring &rest attributes)
   (unless (facep new-face)
     (if (fboundp 'set-face-attribute)
@@ -769,13 +462,22 @@ Otherwise split the current paragraph into one sentence per line."
     (mapc #'elfeed-search-update-entry entries)
     (unless (use-region-p) (forward-line))))
 (defun ndu/nov-mode ()
+  (use-package nov :mode ("\\.epub\\'" . ndu/nov-mode))
+  (spacemacs/set-leader-keys-for-major-mode 'nov-mode
+      "g" 'nov-render-document
+      "v" 'nov-view-source
+      "V" 'nov-view-content-source
+      "m" 'nov-display-metadata
+      "n" 'nov-next-document
+      "]" 'nov-next-document
+      "p" 'nov-previous-document
+      "[" 'nov-previous-document
+      "t" 'nov-goto-toc)
   (archive-mode)
   (nov-mode)
   (face-remap-add-relative 'variable-pitch
                            :family "Liberation Serif"
-                           :height 1.0)
-  ;(olivetti-mode)
-  )
+                           :height 1.0))
 (defun ndu/elfeed-mode ()
   (require 'elfeed)
   (define-key elfeed-search-mode-map (kbd "m") 'ndu/eww-open)
@@ -843,20 +545,23 @@ Otherwise split the current paragraph into one sentence per line."
   (setq new-window
          (or (car available-windows)
              (split-window-right)
-             (split-window-sensibly)
-             ))
+             (split-window-sensibly)))
   (select-window new-window)
   (org-id-open path _)
   (evil-window-move-far-right))
+
+;; bug in org-drill - replace function
 (defun ndu/org-drill-time-to-inactive-org-timestamp (time)
   "Convert TIME into org-mode timestamp."
   (format-time-string
     (concat "[" (cdr org-time-stamp-formats) "]")
     time))
 (defun ndu/org-mode ()
-  ;; bug in org-drill
+  (load "~/.emacs.d/manuallyInstalled/vanish.el")
+  (require 'vanish)
   (require 'org-drill)
   (require 'org-collector)
+  ;; bug in org-drill
   (advice-add 'org-drill-time-to-inactive-org-timestamp :override #'ndu/org-drill-time-to-inactive-org-timestamp)
   (add-hook 'org-mode-hook
    '(lambda ()
@@ -887,22 +592,25 @@ Otherwise split the current paragraph into one sentence per line."
                      (org-mode-hook (vanish-mode))))
 		;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
 		(setq org-capture-templates
-          `(("w" "todo" plain (file+headline "~/org/gtd.org" "Now")
-             "** TODO %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("e" "topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
-             ;; "%(ndu/insert-topic-item-capture \"T\")%(org-set-tags \"drill:topic\")\n   %?"
-             "** %?%(org-set-tags \"drill:topic\")\n"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("r" "item" plain (file+headline "~/org/misc-notes-items.org" "Items")
-             "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("a" "note" plain (file+headline "~/org/gtd.org" "Notes")
-             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("s" "task topic" plain (file+headline "~/org/gtd.org" "Task topics")
+          `(("w" "note topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
              "%(ndu/insert-task-topic-item)\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("d" "task item" plain (file+headline "~/org/gtd.org" "Task items")
+            ("e" "note item" plain (file+headline "~/org/misc-notes-items.org" "Items")
+             "%(ndu/insert-topic-item-capture \"I\")%(org-set-tags \"drill:item\")\n   %?"
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("r" "note" plain (file+headline "~/org/gtd.org" "Notes")
+             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("a" "task topic" plain (file+headline "~/org/gtd.org" "Task topics")
+             "%(ndu/insert-task-topic-item)\n   %?"
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("s" "task item" plain (file+headline "~/org/gtd.org" "Task items")
              "%(ndu/insert-task-topic-item)%(org-set-property \"CONFIDENCE\" \"5\")\n   %?"
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("d" "GTD topic" plain (file+headline "~/org/gtd.org" "Topics")
+             "%(ndu/insert-task-topic-item)\n   %?"
+             :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("f" "task blocks" plain (file+headline "~/org/gtd.org" "Task blocks")
+             "%(ndu/insert-task-topic-item)\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)))
     (add-hook 'org-capture-after-finalize-hook 'ndu/align-tags)
     (add-hook 'org-mode-hook '(lambda ()
@@ -980,11 +688,10 @@ Otherwise split the current paragraph into one sentence per line."
     (toggle-read-only))
   (add-hook 'compilation-filter-hook 'colorize-compilation-buffer))
 (defun ndu/doxymacs ()
-  ;(mapc #'load '("~/.emacs.d/manuallyinstalled/xml-parse.el"
-  ;              "~/.emacs.d/manuallyinstalled/doxymacs.el"))
+  (mapc #'load '("~/.emacs.d/manuallyinstalled/xml-parse.el"
+                 "~/.emacs.d/manuallyinstalled/doxymacs.el"))
   (ndu/set-keys '(("C-'"   #'doxymacs-insert-function-comment)
-                  ("C-\""  #'doxymacs-insert-file-comment))
-                nil))
+                  ("C-\""  #'doxymacs-insert-file-comment)) nil))
 (defun ndu/taskjuggler ()
    (load "~/.emacs.d/manuallyInstalled/taskjuggler-mode.el"))
 (defun ndu/clojure ()
@@ -1198,31 +905,11 @@ Otherwise split the current paragraph into one sentence per line."
   "Configuration function for user code.
    This function is called at the very end of Spacemacs initialization after
    layers configuration. You are free to put any user code. "
-  ;(with-eval-after-load 'company
-  ; (add-to-list 'company-backends '(company-capf company-dabbrev)))
-  ; https://yiufung.net/post/anki-org/
-  (use-package anki-editor
-      :after org
-      :bind (:map org-mode-map
-                  ("<f12>" . ndu/cloze-region-auto-incr)
-                  ("<f11>" . ndu/cloze-region-dont-incr)
-                  ("<f10>" . ndu/reset-cloze-number)
-                  ("<f9>"  . ndu/push-notes))
-      :hook (org-capture-after-finalize . ndu/reset-cloze-number) ; Reset cloze-number after each capture.
-      :config
-      ; Allow anki-editor to create a new deck if it doesn't exist
-      (setq anki-editor-create-decks t
-            anki-editor-org-tags-as-anki-tags t)
-      ;; Initialize
-      (ndu/reset-cloze-number))
   (mapc (lambda (x)
           (add-to-list (car x) (cadr x)))
-        '((load-path "/opt/homebrew/bin")
-          (evil-emacs-state-modes wordnut-mode)))
+        '((load-path "/opt/homebrew/bin")))
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
   (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
-  (use-package nov
-    :mode ("\\.epub\\'" . ndu/nov-mode))
   (ndu/set-leader
     'anki-editor
     '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
@@ -1230,44 +917,23 @@ Otherwise split the current paragraph into one sentence per line."
       ("oc" ndu/add-cached-tag)              ("oC" ndu/removed-cached-tag)
       ("ob" ndu/insert-blocks-table)         ("oB" ndu/insert-blocks-task)
       ("ot" ndu/insert-topic-table)          ("oT" ndu/insert-item-table)
-      ("oq" ndu/org-drill-todo)              ("ow" ndu/org-cram-todo)
-      ("oe" ndu/org-drill-todo-tree)         ("or" ndu/org-cram-todo-tree)
-      ("oh" ndu/org-drill-topic)             ("oj" ndu/org-drill-item)
-      ("ok" ndu/org-drill-topic-tree)        ("ol" ndu/org-drill-item-tree)
-      ("oH" ndu/org-cram-topic)              ("oJ" ndu/org-cram-item)
-      ("oK" ndu/org-cram-topic-tree)         ("oL" ndu/org-cram-item-tree)
-      ("oa" ndu/org-drill)                   ("os" ndu/org-cram)
-      ("od" ndu/org-drill-tree)              ("of" ndu/org-cram-tree)
-      ("o," ndu/cloze-region-auto-incr)      ("o." ndu/cloze-region-dont-incr)
-      ("o/" anki-editor-latex-region)        ("ov" ndu/expand)
-      ("og" ndu/align-tags)                  ("oV" ndu/expand-all)
-      ("ou" anki-editor-retry-failure-notes) ("o'"  ndu/insert-link)
+      ("oa" org-drill)                       ("os" org-cram)
+      ("od" org-drill-tree)                  ("of" org-drill-cram-tree)
+      ("ov" ndu/expand)                      ("oV" ndu/expand-all)
+      ("og" ndu/align-tags)                  ("oG" vanish-mode)
       ("oi" ndu/update-tables)               ("oI" org-table-edit-formulas)
-      ("oo" org-capture)                     ("oO" vanish-mode)
       ("op" ndu/shrink)                      ("oP" ndu/shrink-all)
       ("oY"  ndu/insert-last-stored-link)    ("oy" org-store-link)
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
       ("o,"  evil-numbers/dec-at-pt)         ("o." ndu/set-confidence)
-      ("o<"  org-drill-resume)               ("o>" org-drill-again)))
-  (spacemacs/set-leader-keys-for-major-mode 'nov-mode
-    "g" 'nov-render-document
-    "v" 'nov-view-source
-    "V" 'nov-view-content-source
-    "m" 'nov-display-metadata
-    "n" 'nov-next-document
-    "]" 'nov-next-document
-    "p" 'nov-previous-document
-    "[" 'nov-previous-document
-    "t" 'nov-goto-toc)
-  (when (fboundp 'imagemagick-register-types)
-   (imagemagick-register-types))
-  (advice-add 'play-sound :around 'my/play-sound)
+      ("o<"  org-drill-resume)               ("o>" org-drill-again)
+      ("oo" org-capture)))
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
-    org-tags-column -50
+    org-tags-column -40
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
     spacemacs-yank-indent-threshold 0
@@ -1278,7 +944,7 @@ Otherwise split the current paragraph into one sentence per line."
     visual-fill-column-center-text t
     vterm-always-compile-module t
     org-use-property-inheritance t
-    nov-text-width 60
+    ; nov-text-width 60
     org-id-link-to-org-use-id 'create-if-interactive
     org-adapt-indentation t
     c-default-style "k&r"
@@ -1302,7 +968,6 @@ Otherwise split the current paragraph into one sentence per line."
     org-default-priority org-lowest-priority
     git-magit-status-fullscreen t
     c-c++-lsp-enable-semantic-highlight t)
-  (ndu/set-hooks '((c++-mode-hook (lsp))))
   (global-visual-line-mode t)
   (setq-default truncate-partial-width-windows nil)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "$" 'evil-end-of-visual-line)
@@ -1311,18 +976,12 @@ Otherwise split the current paragraph into one sentence per line."
   (evil-define-minor-mode-key 'motion 'visual-line-mode "k" 'evil-previous-visual-line)
   (global-set-key (kbd "M-q") 'ndu/fill-paragraph)
   (mapc #'funcall
-        #'(spacemacs/toggle-menu-bar-on
+        #'(spacemacs/toggle-menu-bar-on ; ndu/latex ndu/ansi-color ndu/doxymacs
            spacemacs/toggle-highlight-current-line-globally-off
-           global-whitespace-mode
-           global-flycheck-mode
-           ndu/org-mode
-           ndu/latex
-           ndu/ansi-color
-           ndu/doxymacs
-           ndu/clojure
-           ndu/emacs-lisp
-           ndu/c-mode
-           ndu/elfeed-mode))
+           global-whitespace-mode       ; global-flycheck-mode ndu/nov-mode
+           ndu/org-mode                 ; ndu/clojure ndu/c-mode ndu/elfeed-mode
+           ndu/emacs-lisp))
+  ; (ndu/set-hooks '((c++-mode-hook (lsp))))
   ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
   (mapc (lambda (hook) (remove-hook 'find-file-hook hook))
