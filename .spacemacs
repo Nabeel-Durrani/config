@@ -374,29 +374,6 @@ Return the list of results."
   (anki-editor-push-notes)
   (ndu/reset-cloze-number))
 ; https://abizjak.github.io/emacs/2016/03/06/latex-fill-paragraph.html
-(defun ndu/fill-paragraph (&optional P)
-  "When called with prefix argument call `fill-paragraph'.
-Otherwise split the current paragraph into one sentence per line."
-  (interactive "P")
-  (if (not P)
-      (save-excursion
-        (let ((fill-column 12345678)) ; relies on dynamic binding
-          (fill-paragraph) ; this will not work correctly if the paragraph is
-                           ; longer than 12345678 characters (in which case the
-                           ; file must be at least 12MB long. This is   unlikely.)
-          (let ((end (save-excursion
-                       (forward-paragraph 1)
-                       (backward-sentence)
-                       (point-marker))))  ;; remember where to stop
-            (beginning-of-line)
-            (while (progn (forward-sentence)
-                          (<= (point) (marker-position end)))
-              (just-one-space) ; leaves only one space, point is after it
-              (delete-char -1) ; delete the space
-              ;; and insert a newline
-              (newline)
-              (indent-relative)))))
-    (fill-paragraph P))) ; otherwise do ordinary fill paragraph
 (defun org-copy-face (old-face new-face docstring &rest attributes)
   (unless (facep new-face)
     (if (fboundp 'set-face-attribute)
@@ -935,7 +912,7 @@ Otherwise split the current paragraph into one sentence per line."
   (evil-define-minor-mode-key 'motion 'visual-line-mode "^" 'evil-first-non-blank-of-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "j" 'evil-next-visual-line)
   (evil-define-minor-mode-key 'motion 'visual-line-mode "k" 'evil-previous-visual-line)
-  (global-set-key (kbd "M-q") 'ndu/fill-paragraph)
+  (global-set-key (kbd "M-q") 'fill-paragraph)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on ; ndu/latex ndu/ansi-color ndu/doxymacs
            spacemacs/toggle-highlight-current-line-globally-off
@@ -952,6 +929,7 @@ Otherwise split the current paragraph into one sentence per line."
           yas-global-mode-check-buffers undo-tree-load-history-from-hook))
   (ndu/set-keys '(("C-<"    #'ndu/next-row-edit)
                   ("C->"    #'ndu/next-column-edit)
+                  ("C-m"    #'ndu/edit-field)
                   ("C-;"    #'counsel-outline)
                   ("C-:"    #'org-match-sparse-tree)) t)
   (find-file "~/org/misc-notes-items.org")
