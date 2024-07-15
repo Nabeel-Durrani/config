@@ -1,3 +1,16 @@
+(defun ndu/org-drill-leitner-start-box (number)
+  "Start leitner at box 4 instead of 1"
+  (message "Starting %s new items" number)
+  (sit-for 0.25)
+  (seq-map
+   (lambda (loc)
+     (org-drill-goto-entry loc)
+     (message "New leitner entry: %s" (org-drill-get-entry-text))
+     (sit-for 0.5)
+     (org-set-property "DRILL_LEITNER_BOX" "4"))
+   (seq-take
+    (org-drill-shuffle (seq-copy org-drill-leitner-unboxed-entries))
+    number)))
 (defun ndu/previous-match ()
   (interactive)
   (previous-error)
@@ -86,11 +99,10 @@
                       (number-to-string confidence))))
 (defun ndu/remove-tag (tag)
   (interactive)
-  (org-set-tags (delete tag (org-get-tags))))
+  (org-toggle-tag tag 'off))
 (defun ndu/add-tag (tag)
   (interactive)
-  (setq lst (org-get-tags))
-  (org-set-tags (push tag lst)))
+  (org-toggle-tag tag 'on))
 (defun ndu/remove-drill-tag ()
   (interactive)
   (ndu/remove-tag "drill"))
@@ -103,10 +115,10 @@
 (defun ndu/add-cached-tag ()
   (interactive)
   (ndu/add-tag "cached"))
-(defun ndu/add-leit-tag-to-leit ()
+(defun ndu/add-leitner-tag-to-leit ()
   (interactive)
-  (org-map-entries #'ndu/remove-leit-tag "leit")
-  (org-map-entries #'ndu/add-leit-tag "leit")
+  (org-map-entries #'ndu/remove-leitner-tag "leit")
+  (org-map-entries #'ndu/add-leitner-tag "leit")
   (ndu/align-tags))
 (defun ndu/add-leitner-tag ()
   (interactive)
@@ -428,8 +440,12 @@ Return the list of results."
   (require 'vanish)
   (require 'org-drill)
   (require 'org-collector)
+  ;; start at leitner box 4 instead of 1
+  (advice-add #'org-drill-leitner-start-box
+              :override #'ndu/org-drill-leitner-start-box)
   ;; bug in org-drill
-  (advice-add 'org-drill-time-to-inactive-org-timestamp :override #'ndu/org-drill-time-to-inactive-org-timestamp)
+  (advice-add #'org-drill-time-to-inactive-org-timestamp
+              :override #'ndu/org-drill-time-to-inactive-org-timestamp)
   (add-hook 'org-mode-hook
    '(lambda ()
      (delete '("\\.pdf\\'" . default) org-file-apps)
@@ -782,10 +798,11 @@ Return the list of results."
       ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
       ("ob" ndu/insert-blocks-table)         ("oB" ndu/insert-blocks-task)
       ("ot" ndu/insert-topic-table)          ("oT" ndu/insert-item-table)
-      ("oa" org-drill)                       ("os" org-drill-leitner)
+      ("oa" org-drill-again)                 ("oA" org-drill-leitner)
       ("oc" ndu/add-cached-tag)              ("oC" ndu/remove-cached-tag)
       ("od" ndu/add-drill-tag)               ("oD" ndu/remove-drill-tag)
       ("ol" ndu/add-leit-tag)                ("oL" ndu/remove-leit-tag)
+      ("ok" ndu/add-leitner-tag)             ("oK" ndu/remove-leitner-tag)
       ("ov" ndu/expand)                      ("oV" ndu/expand-all)
       ("og" ndu/align-tags)                  ("oG" vanish-mode)
       ("oi" ndu/update-tables)               ("oI" org-table-edit-formulas)
@@ -795,8 +812,8 @@ Return the list of results."
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
       ("o,"  evil-numbers/dec-at-pt)         ("o." ndu/set-confidence)
-      ("o<"  org-drill-resume)               ("o>" org-drill-again)
-      ("oo" org-capture)))
+      ("o<"  org-drill-resume)               ("o>" ndu/add-leitner-tag-to-leit)
+      ("oo"  org-capture)                    ("os" org-drill)))
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
