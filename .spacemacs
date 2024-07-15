@@ -1,3 +1,7 @@
+(defun ndu/table-edit-formulas ()
+  (interactive)
+  (ndu/expand)
+  (org-table-edit-formulas))
 (defun ndu/org-drill-leitner-start-box (number)
   "Start leitner at box 4 instead of 1"
   (message "Starting %s new items" number)
@@ -91,12 +95,6 @@
   (org-table-map-tables #'org-table-shrink t)
   (org-table-map-tables #'org-table-align t)
   (ndu/hide-tbmlfm))
-(defun ndu/set-confidence ()
-  (interactive)
-  (let ((confidence (ndu/sum-str-to-num (list (org-table-get-remote-range "constantsTable" "@3$4")
-                                              (read-from-minibuffer "Confidence (1 (high) to 5 (low)): ")))))
-    (org-set-property "CONFIDENCE"
-                      (number-to-string confidence))))
 (defun ndu/remove-tag (tag)
   (interactive)
   (org-toggle-tag tag 'off))
@@ -178,37 +176,45 @@
   (newline-and-indent)
   (setq spaces (make-string (current-column) ?\s))
   (insert (concat "#+NAME: " (org-entry-get nil "ITEM")                              "\n"
-           spaces "| <10>  | <0>   | <0>   | <0>   | <7>   | <0>  | <0> | <6>     |" "\n"
-           spaces "| I-TBL | U-IMP | U-UGH | S-EFF | I-PRI | PROG | TSK | TSK-PRI |" "\n"
-           spaces "|-------+-------+-------+-------+-------+------+-----+---------|" "\n"
-           spaces "|       |       |       |       |       |      |     |         |" "\n"
+           spaces "| <10>  | <0>   | <15>       | <3>   | <0>   | <0>   | <0>  | <0> | <0>     |" "\n"
+           spaces "| I-TBL | M-IMP | M-IMP-DESC | R-IMP | S-EFF | I-PRI | PROG | TSK | TSK-PRI |" "\n"
+           spaces "|-------+-------+------------+-------+-------+-------+------+-----+---------|" "\n"
+           spaces "|       |       |            |       |       |       |      |     |         |" "\n"
            spaces "#+TBLFM: "
-                  "$2=vmean(remote($1, @I$2..@>$2);%.2f::"
-                  "$3=vmean(remote($1, @I$3..@>$3);%.2f::"
-                  "$4=min(vsum(remote($1, @I$7..@>$7)), 1000);%.2f::"
-                  "$5=vsum(remote($1, @I$8..@>$8))/$4;%.2f::"
-                  "$6=vsum(remote($1,@I$6..@>$6))/vlen(remote($1,@I$6..@>$6));%.2f::"
-                  "$7='(org-lookup-first $8 '(remote($1, @I$8..@>$8)) '(remote($1, @I$1..@>$1)))::"
-                  "$8=vmax(remote($1, @I$8..@>$8));%.2f")))
+                  "$2=vmax(remote($1,@I$2..@>$2))::"
+                  "$3='(org-lookup-first $2 '(remote($1, @I$2..@>$2)) '(remote($1, @I$12..@>$12)))::"
+                  "$4='(if (> (string-to-number $4) 0) $4 5)::"
+                  "$5=min(vsum(remote($1, @I$8..@>$8)), 1000);%.2f::"
+                  "$6=vhmean(remote($1, @I$9..@>$9));%.2f::"
+                  "$7=vsum(remote($1,@I$7..@>$7))/vlen(remote($1,@I$7..@>$7));%.2f::"
+                  "$8='(org-lookup-first $9 '(remote($1, @I$9..@>$9)) '(remote($1, @I$1..@>$1)))::"
+                  "$9=vmax(remote($1, @I$9..@>$9));%.2f")))
 (defun ndu/insert-item-table ()
   (interactive)
   (move-end-of-line 1)
   (newline-and-indent)
-  (let ((spaces    (make-string (current-column) ?\s))
-        (blocksTbl (read-from-minibuffer "Blocking items table: " nil nil nil nil "blocksTbl"))
-        (blocksTsk (read-from-minibuffer "Blocking tasks table: " nil nil nil nil "blocksTsk")))
+  (let ((spaces        (make-string (current-column) ?\s))
+        (topicTasksTbl (read-from-minibuffer "Topic items table: "    nil nil nil nil "topicTasksTemplate"))
+        (blocksTbl     (read-from-minibuffer "Blocking items table: " nil nil nil nil "blocksTbl"))
+        (blocksTsk     (read-from-minibuffer "Blocking tasks table: " nil nil nil nil "blocksTsk")))
     (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
-                    spaces "| <0> | <1> | <1> | <1> | <1> | <1>  | <0> | <5> | <0>   | <0>  | <4>  |" "\n"
-                    spaces "| TSK | IMP | UGH | TIM | BLK | DONE | EFF | PRI | PRI-N | MAYB | DESC |" "\n"
-                    spaces "|-----+-----+-----+-----+-----+------+-----+-----+-------+------+------|" "\n"
-                    spaces "|     |     |     |     |     |      |     |     |       |      |      |" "\n"
+                    spaces "| <0> | <0> | <0> | <0> | <0>   | <0> | <0>  | <0> | <5> | <0>   | <0>  | <15> |"
+                    "\n"
+                    spaces "| TSK | IMP | UGH | TIM | A-IMP | BLK | DONE | EFF | PRI | PRI-N | MAYB | DESC |"
+                    "\n"
+                    spaces "|-----+-----+-----+-----+-------+-----+------+-----+-----+-------+------+------|"
+                    "\n"
+                    spaces "|     |     |     |     |       |     |      |     |     |       |      |      |"
+                    "\n"
                     spaces "#+TBLFM: "
                            "$1=@#-2::"
-                           "$5='(ndu/get-blocks" " " "\"" blocksTbl "\"" " " "\"" blocksTsk "\"" " " "$1)::"
-                           "$7=(1-$6)*min(exp(4*min(vsum(@3$5..@>$5), 5))*$4,100);%.2f::"
-                           "$8=" "(" "(1-$5)*(1-$6)" "*" "(remote(constantsTable,@5$3)^$10)" "*"
-                           "($2*$3^(remote(constantsTable,@3$3)))^(1/3)/($7 + 0.1*$6);%.2f"
-                           "$9=5*$8/vmax(@3$8..@>$8);%.1f"))))
+                           "$5='(ndu/get-adjusted-importance" " " "\"" topicTasksTbl "\"" " " "$2);%.2f::"
+                           "$6='(ndu/get-blocks" " " "\"" blocksTbl "\"" " "
+                                                     "\"" blocksTsk "\"" " " "$1)::"
+                           "$8=(1-$7)*min(exp(4*min(vsum(@I$6..@>$6), 5))*$4,100);%.2f::"
+                           "$9=" "(1-$6)*(1-$7)" "*" "(remote(constantsTable,@5$3)^$11)" "*"
+                                 "($5*$3^(remote(constantsTable,@3$3)))^(1/3)" "/" "($8 + $7);%.2f::"
+                           "$10=5*$9/vmax(@3$9..@>$9);%.1f"))))
 (defun ndu/insert-task-topic-item ()
   (interactive)
   (let* ((task (read-from-minibuffer "Heading Name: "))
@@ -245,6 +251,14 @@ Return the list of results."
                                  slist
                                  rlist))))
   (if ret ret 0)))
+(defun ndu/get-adjusted-importance (topicTbl importance)
+  (interactive)
+  (let ((itemTbls      (ndu/get-remote-range topicTbl "@I$1..@>$1"))
+        (relImportance (ndu/get-remote-range topicTbl "@I$4..@>$4"))
+        (currTable     (org-entry-get nil "ITEM")))
+    (* 0.2 ; divide relative importance by 5 to get scaling percentage
+       (string-to-number importance)
+       (string-to-number (org-lookup-first currTable itemTbls relImportance)))))
 (defun ndu/get-blocks (blocksTbl blocksTsk tsk)
   (interactive)
   (cond ((> (ndu/lookup-all-sum
@@ -265,7 +279,7 @@ Return the list of results."
 (defun ndu/update-tables ()
   "Similar to org-table-iterate-buffer-tables, but excludes headings with tag 'cached'."
   (interactive)
-  (let* ((imax 100)
+  (let* ((imax 10)
         (i imax)
         (checksum (md5 (buffer-string)))
         c1)
@@ -282,11 +296,12 @@ Return the list of results."
               (progn
                 (org-table-map-tables #'org-table-align t)
                 (ndu/hide-tbmlfm)
+                (ndu/hide-tbmlfm)
+                (ndu/shrink-all)
                 (message "Convergence after %d iterations" (- imax i))
                 (throw 'exit t))
             (setq checksum c1)))
         (org-table-map-tables #'org-table-align t)
-        (ndu/hide-tbmlfm)
         (user-error "No convergence after %d iterations" imax)))))
 (defun ndu/insert-last-stored-link ()
   (require 'org)
@@ -503,7 +518,7 @@ Return the list of results."
              "%(ndu/insert-task-topic-item)\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("s" "task item" plain (file+headline "~/org/gtd.org" "Task items")
-             "%(ndu/insert-task-topic-item)%(org-set-property \"CONFIDENCE\" \"5\")\n   %?"
+             "%(ndu/insert-task-topic-item)\n   %?"
              :prepend t :empty-lines-before 0 :empty-lines-after 0)
             ("d" "GTD topic" plain (file+headline "~/org/gtd.org" "Topics")
              "%(ndu/insert-task-topic-item)\n   %?"
@@ -821,15 +836,14 @@ Return the list of results."
       ("ok" ndu/add-leitner-tag)             ("oK" ndu/remove-leitner-tag)
       ("ov" ndu/expand)                      ("oV" ndu/expand-all)
       ("og" ndu/align-tags)                  ("oG" vanish-mode)
-      ("oi" ndu/update-tables)               ("oI" org-table-edit-formulas)
+      ("oi" ndu/update-tables)               ("oI" ndu/table-edit-formulas)
       ("op" ndu/shrink)                      ("oP" ndu/shrink-all)
       ("oY"  ndu/insert-last-stored-link)    ("oy" org-store-link)
       ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
-      ("o,"  evil-numbers/dec-at-pt)         ("o." ndu/set-confidence)
-      ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)
-      ("oo"  org-capture)))
+      ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
+      ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)))
   (setq-default
     org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
     org-timer-default-timer "0:25:00"
