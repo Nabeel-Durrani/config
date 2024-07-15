@@ -93,7 +93,7 @@
   (ndu/hide-tbmlfm))
 (defun ndu/set-confidence ()
   (interactive)
-  (let ((confidence (ndu/sum-str-to-num (list (org-table-get-remote-range "constantsTable" "@3$3")
+  (let ((confidence (ndu/sum-str-to-num (list (org-table-get-remote-range "constantsTable" "@3$4")
                                               (read-from-minibuffer "Confidence (1 (high) to 5 (low)): ")))))
     (org-set-property "CONFIDENCE"
                       (number-to-string confidence))))
