@@ -63,7 +63,6 @@
   (interactive)
   (ndu/unsplit-table-field)
   (org-ctrl-c-ctrl-c)
-  (ndu/shrink)
   (save-excursion
     (funcall next-fn)
     (unless (org-at-table-p)
@@ -641,16 +640,16 @@ Return the list of results."
                                                        company-capf))
       better-defaults markdown
       syntax-checking  ; gtags java
-      (lsp :variables lsp-lens-enable t)
-      (c-c++
-       :variables
-       c-c++-adopt-subprojects t
-       c-c++-backend 'lsp-cclas)
-      dap emacs-lisp elfeed ;mu4e semantic themes-megapack
-      csv python ess clojure scheme octave
-      (latex :variables latex-build-command "LaTeX")
-      (elfeed :variables elfeed-enable-goodies nil)
-      (elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
+      ;(lsp :variables lsp-lens-enable t)
+     ;(c-c++
+     ; :variables
+     ; c-c++-adopt-subprojects t
+     ; c-c++-backend 'lsp-cclas) dap
+      emacs-lisp ;elfeed mu4e semantic themes-megapack
+      ;csv python ess clojure scheme octave
+      ;(latex :variables latex-build-command "LaTeX")
+      ;(elfeed :variables elfeed-enable-goodies nil)
+      ;(elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
 	    (spell-checking :variables spell-checking-enable-by-default nil))
     ; List of additional packages that will be installed without being
     ;; wrapped in a layer. If you need some configuration for these
@@ -658,7 +657,7 @@ Return the list of results."
     ;; configuration in `dotspacemacs/config'.helm-R
     dotspacemacs-additional-packages '(ansi-color rg
                                        org-drill org-tidy
-                                       evil-smartparens cdlatex
+                                       ;evil-smartparens cdlatex
                                        ;latex-extra latex-math-preview
                                        hydra ;lsp-mode lsp-ui nov
                                       (evil-ediff
@@ -695,7 +694,7 @@ Return the list of results."
     ;; directory. A string value must be a path to an image format supported
     ;; by your Emacs build.
     ;; If the value is nil then no banner is displayed. (default 'official)
-    dotspacemacs-startup-banner 'official
+    dotspacemacs-startup-banner nil
     ;; List of items to show in the startup buffer. If nil it is disabled.
     ;; Possible values are: `recents' `bookmarks' `projects'.
     ;; (default '(recents projects))
@@ -823,7 +822,6 @@ Return the list of results."
           (add-to-list (car x) (cadr x)))
         '((load-path "/opt/homebrew/bin")))
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
-  (add-hook 'smartparens-enabled-hook 'evil-smartparens-mode)
   (ndu/set-leader
     '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
       ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
@@ -898,6 +896,7 @@ Return the list of results."
           global-flycheck-mode-check-buffers undo-tree-load-history-from-hook
           projectile-find-file-hook-function global-flycheck-mode-check-buffers
           yas-global-mode-check-buffers undo-tree-load-history-from-hook))
+  (global-unset-key (kbd "C-a"))
   (ndu/set-keys '(("C-<"    #'ndu/next-row-edit)
                   ("C->"    #'ndu/next-column-edit)
                   ("C-:"    #'ndu/edit-field)
