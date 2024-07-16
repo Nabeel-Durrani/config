@@ -165,11 +165,14 @@
   (move-end-of-line 1)
   (newline-and-indent)
   (setq spaces (make-string (current-column) ?\s))
-  (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
-                  spaces "| <10>  | <10>  | <3> |"      "\n"
-                  spaces "| I-TBL | B-TBL | BLK |"      "\n"
-                  spaces "|-------+-------+-----|"      "\n"
-                  spaces "|       |       |     |")))
+  (insert (concat "#+NAME: " (org-entry-get nil "ITEM")           "\n"
+                  spaces "| <10>  | <10>  | <10>  | <5>  | <3> |" "\n"
+                  spaces "| I-TBL | B-TBL | T-TBL | PROG | BLK |" "\n"
+                  spaces "|-------+-------+-------+------+-----|" "\n"
+                  spaces "|       |       |       |      |     |" "\n"
+                  spaces "#+TBLFM: "
+                         "$4='(org-lookup-first $2 '(remote(Tucat, @I$1..@>..$1)) '(remote($3, @I$7..@>$7)));%.2f::"
+                         "$5='(if (< (string-to-number $4) 100) 1 0)")))
 (defun ndu/insert-topic-table ()
   (interactive)
   (move-end-of-line 1)
