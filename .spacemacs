@@ -198,7 +198,7 @@
         (blocksTbl     (read-from-minibuffer "Blocking items table: " nil nil nil nil "blocksTbl"))
         (blocksTsk     (read-from-minibuffer "Blocking tasks table: " nil nil nil nil "blocksTsk")))
     (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
-                    spaces "| <0> | <0> | <0> | <0> | <0>   | <0> | <0>  | <0> | <5> | <0>   | <0>  | <15> |"
+                    spaces "| <0> | <1> | <1> | <3> | <0>   | <0> | <0>  | <0> | <5> | <0>   | <0>  | <10> |"
                     "\n"
                     spaces "| TSK | IMP | UGH | TIM | A-IMP | BLK | DONE | EFF | PRI | PRI-N | MAYB | DESC |"
                     "\n"
@@ -605,8 +605,6 @@ Return the list of results."
                  "~/.emacs.d/manuallyinstalled/doxymacs.el"))
   (ndu/set-keys '(("C-'"   #'doxymacs-insert-function-comment)
                   ("C-\""  #'doxymacs-insert-file-comment)) nil))
-(defun ndu/taskjuggler ()
-   (load "~/.emacs.d/manuallyInstalled/taskjuggler-mode.el"))
 (defun ndu/clojure ()
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu/emacs-lisp ()
@@ -845,8 +843,6 @@ Return the list of results."
       ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
       ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)))
   (setq-default
-    org-clock-sound "~/.emacs.d/manuallyInstalled/bell.wav"
-    org-timer-default-timer "0:25:00"
     org-tags-column -40
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
