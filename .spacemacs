@@ -171,7 +171,7 @@
                   spaces "|-------+-------+-------+------+-----|" "\n"
                   spaces "|       |       |       |      |     |" "\n"
                   spaces "#+TBLFM: "
-                         "$4='(org-lookup-first $2 '(remote(Tucat, @I$1..@>..$1)) '(remote($3, @I$7..@>$7)));%.2f::"
+                         "$4='(org-lookup-first $2 '(remote($3, @I$1..@>..$1)) '(remote($3, @I$7..@>$7)));%.2f::"
                          "$5='(if (< (string-to-number $4) 100) 1 0)")))
 (defun ndu/insert-topic-table ()
   (interactive)
@@ -267,7 +267,7 @@ Return the list of results."
   (cond ((> (ndu/lookup-all-sum
              (org-entry-get nil "ITEM")
              (ndu/get-remote-range blocksTbl "@2$1..@>$1")
-             (ndu/get-remote-range blocksTbl "@2$3..@>$3"))
+             (ndu/get-remote-range blocksTbl "@2\$>..@>\$>"))
             0) 1)
         ((> (let ((tbls (ndu/get-remote-range blocksTsk "@2$1..@>$1"))
                   (tsks (ndu/get-remote-range blocksTsk "@2$2..@>$2"))
