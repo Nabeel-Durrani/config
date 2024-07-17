@@ -1,3 +1,7 @@
+(defun ndu/org-syntax-table-modify ()
+  "Modify `org-mode-syntax-table' for the current org buffer."
+  (modify-syntax-entry ?< "." org-mode-syntax-table)
+  (modify-syntax-entry ?> "." org-mode-syntax-table))
 (defun ndu/table-edit-formulas ()
   (interactive)
   (ndu/expand)
@@ -478,6 +482,8 @@ Return the list of results."
   ;; bug in org-drill
   (advice-add #'org-drill-time-to-inactive-org-timestamp
               :override #'ndu/org-drill-time-to-inactive-org-timestamp)
+  (add-hook 'org-mode-hook #'ndu/org-syntax-table-modify)
+  (add-hook 'org-mode-hook #'electric-pair-mode)
   (add-hook 'org-mode-hook
    '(lambda ()
      (delete '("\\.pdf\\'" . default) org-file-apps)
@@ -860,6 +866,7 @@ Return the list of results."
     org-adapt-indentation t
     c-default-style "k&r"
     c-basic-offset 4
+    find-file-visit-truename t
     org-hide-emphasis-markers t
     org-startup-with-inline-images t
     org-startup-folded 'showall
