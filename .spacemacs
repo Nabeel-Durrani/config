@@ -204,7 +204,7 @@
         (blocksTbl     (read-from-minibuffer "Blocking items table: " nil nil nil nil "blocksTbl"))
         (blocksTsk     (read-from-minibuffer "Blocking tasks table: " nil nil nil nil "blocksTsk")))
     (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
-                    spaces "| <0> | <1> | <1> | <3> | <0>   | <0> | <0>  | <0> | <5> | <0>   | <0>  | <10> |"
+                    spaces "| <0> | <1> | <1> | <3> | <0>   | <0> | <1>  | <0> | <5> | <0>   | <0>  | <10> |"
                     "\n"
                     spaces "| TSK | IMP | UGH | TIM | A-IMP | BLK | DONE | EFF | PRI | PRI-N | MAYB | DESC |"
                     "\n"
@@ -302,8 +302,6 @@ Return the list of results."
               (progn
                 (org-table-map-tables #'org-table-align t)
                 (ndu/hide-tbmlfm)
-                (ndu/hide-tbmlfm)
-                (ndu/shrink-all)
                 (message "Convergence after %d iterations" (- imax i))
                 (throw 'exit t))
             (setq checksum c1)))
