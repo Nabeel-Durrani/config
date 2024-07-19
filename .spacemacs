@@ -78,23 +78,23 @@
   (ndu/split-table-field))
 (defun ndu/expand ()
   (interactive)
-  (spacemacs/toggle-truncate-lines-on)
+  ;(spacemacs/toggle-truncate-lines-on)
   (org-table-expand)
   (ndu/show-tbmlfm))
 (defun ndu/expand-all ()
   (interactive)
-  (spacemacs/toggle-truncate-lines-on)
+  ;(spacemacs/toggle-truncate-lines-on)
   (org-table-map-tables #'org-table-expand t)
   (org-table-map-tables #'org-table-align t)
   (ndu/show-tbmlfm))
 (defun ndu/shrink ()
   (interactive)
-  (spacemacs/toggle-truncate-lines-off)
+  ;(spacemacs/toggle-truncate-lines-off)
   (ndu/hide-tbmlfm)
   (org-table-shrink))
 (defun ndu/shrink-all ()
   (interactive)
-  (spacemacs/toggle-truncate-lines-off)
+  ;(spacemacs/toggle-truncate-lines-off)
   (org-table-map-tables #'org-table-shrink t)
   (org-table-map-tables #'org-table-align t)
   (ndu/hide-tbmlfm))
@@ -190,8 +190,8 @@
                   "$2=vmax(remote($1,@I$2..@>$2))::"
                   "$3='(org-lookup-first $2 '(remote($1, @I$2..@>$2)) '(remote($1, @I$12..@>$12)))::"
                   "$4='(if (> (string-to-number $4) 0) $4 5)::"
-                  "$5=min(vsum(remote($1, @I$8..@>$8)), 1000);%.2f::"
-                  "$6=vhmean(0.0001 + remote($1, @I$9..@>$9));%.2f::"
+                  "$5=max(min(vsum(remote($1, @I$8..@>$8)), 1000), 0.01);%.2f::"
+                  "$6=(remote($1, @I$4..@>$4)/$5)*(remote($1, @I$9..@>$9)/vlen(remote($1, @I$9..@>$9)));%.2f"
                   "$7=vsum(remote($1,@I$7..@>$7))/vlen(remote($1,@I$7..@>$7));%.2f::"
                   "$8='(org-lookup-first $9 '(remote($1, @I$9..@>$9)) '(remote($1, @I$1..@>$1)))::"
                   "$9=vmax(remote($1, @I$9..@>$9));%.2f")))
@@ -300,12 +300,12 @@ Return the list of results."
             t)
           (if (equal checksum (setq c1 (md5 (buffer-string))))
               (progn
-                (org-table-map-tables #'org-table-align t)
-                (ndu/hide-tbmlfm)
+                ; (org-table-map-tables #'org-table-align t)
+                ; (ndu/hide-tbmlfm)
                 (message "Convergence after %d iterations" (- imax i))
                 (throw 'exit t))
             (setq checksum c1)))
-        (org-table-map-tables #'org-table-align t)
+        ; (org-table-map-tables #'org-table-align t)
         (user-error "No convergence after %d iterations" imax)))))
 (defun ndu/insert-last-stored-link ()
   (require 'org)
@@ -712,7 +712,7 @@ Return the list of results."
     ;; Default font. `powerline-scale' allows to quickly tweak the mode-line
     ;; size to make separators look not too crappy.
     dotspacemacs-default-font '("Iosevka Fixed" ; Good unicode support (monospaced)
-                               :size 28
+                               :size 24
                                :weight thin
                                :width expanded
                                :powerline-scale 1.1)
@@ -848,7 +848,7 @@ Return the list of results."
       ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
       ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)))
   (setq-default
-    org-tags-column -40
+    org-tags-column -64
     dotspacemacs-whitespace-cleanup 'all
     dotspacemacs-check-for-update t
     spacemacs-yank-indent-threshold 0
@@ -869,10 +869,12 @@ Return the list of results."
     org-startup-with-inline-images t
     org-startup-folded 'showall
     org-image-actual-width nil                   ; images requre size attribute
-    whitespace-line-column 80                    ; After 79 chars,
+    whitespace-line-column 65                    ; After 79 chars,
+    fill-column            65
     whitespace-style '(face) ;'(face lines-tail) ; highlight columns.
     backup-directory-alist `(("." . "~/.saves")) ; file backups
     flycheck-highlighting-mode 'symbols
+    truncate-partial-width-windows nil
     rg-command-line-flags '("--before-context=1")
     flycheck-indication-mode 'left-fringe
     evil-use-y-for-yank t
@@ -884,9 +886,7 @@ Return the list of results."
     org-default-priority org-lowest-priority
     git-magit-status-fullscreen t
     c-c++-lsp-enable-semantic-highlight t)
-  (setq-default truncate-partial-width-windows nil)
   (global-set-key (kbd "M-q") 'fill-paragraph)
-  (spacemacs/toggle-visual-line-navigation-globally-on)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on ; ndu/latex ndu/ansi-color ndu/doxymacs
            spacemacs/toggle-highlight-current-line-globally-off
@@ -896,6 +896,7 @@ Return the list of results."
   ; (ndu/set-hooks '((c++-mode-hook (lsp))))
   ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
+  (add-hook 'hack-local-variables-hook (lambda () (setq truncate-lines t)))
   (mapc (lambda (hook) (remove-hook 'find-file-hook hook))
         '(vc-refresh-state projectile-find-file-hook-function yas-global-mode-check-buffers
           global-flycheck-mode-check-buffers undo-tree-load-history-from-hook
@@ -908,4 +909,5 @@ Return the list of results."
                   ("C-;"    #'counsel-outline)) t)
   (find-file "~/org/misc-notes-items.org")
   (find-file "~/org/gtd.org")
+  (line-number-mode nil)
   (vanish-set-hide 'tblfm t))
