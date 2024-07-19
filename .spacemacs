@@ -200,8 +200,8 @@
                   "$3='(org-lookup-first $2 '(remote($1, @I$2..@>$2)) '(remote($1, @I$12..@>$12)))::"
                   "$4='(if (> (string-to-number $4) 0) $4 5)::"
                   "$5=max(min(vsum(remote($1, @I$8..@>$8)), 1000), 0.01);%.2f::"
-                  "$6=(remote($1, @I$4..@>$4)/$5)*(remote($1, @I$9..@>$9)/vlen(remote($1, @I$9..@>$9)));%.2f"
-                  "$7=vsum(remote($1,@I$7..@>$7))/vlen(remote($1,@I$7..@>$7));%.2f::"
+                  "$6=(remote($1, @I$4..@>$4)/$5)*remote($1, @I$9..@>$9);%.2f"
+                  "$7=vmean(remote($1,@I$7..@>$7));%.2f::"
                   "$8='(org-lookup-first $9 '(remote($1, @I$9..@>$9)) '(remote($1, @I$1..@>$1)))::"
                   "$9=vmax(remote($1, @I$9..@>$9));%.2f")))
 (defun ndu/insert-item-table ()
