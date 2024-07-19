@@ -1,3 +1,12 @@
+(defun ndu/toggle-follow-split ()
+  (interactive)
+  (if (symbolp follow-mode)
+    (follow-delete-other-windows-and-split)
+    (turn-off-follow-mode)))
+(defun ndu/toggle-follow-split-off ()
+  (interactive)
+  (delete-other-windows)
+  (turn-off-follow-mode))
 (defun ndu/org-syntax-table-modify ()
   "Modify `org-mode-syntax-table' for the current org buffer."
   (modify-syntax-entry ?< "." org-mode-syntax-table)
@@ -846,6 +855,7 @@ Return the list of results."
       ("o["  outline-hide-other)             ("o]" outline-show-subtree)
       ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
       ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
+      ("of" ndu/toggle-follow-split)         ("oe" ndu/toggle-follow-split-off)
       ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)))
   (setq-default
     org-tags-column -64
