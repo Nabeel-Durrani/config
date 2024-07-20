@@ -1,3 +1,6 @@
+(defun ndu/toggle-indent-mode ()
+  (electric-indent-mode)
+  (aggressive-indent-mode))
 (defun ndu/smarter-beginning-of-line ()
   "Move point to first beginning-of-line or non-whitespace character or first non-whitespace after comment."
   (interactive "^")
@@ -17,16 +20,6 @@
   (if (and (symbolp follow-mode) follow-mode)
       (turn-off-follow-mode)
     (follow-delete-other-windows-and-split)))
-(defun ndu/lisp-dedent-adjust-parens ()
-  (interactive)
-  (save-excursion
-    (ndu/smarter-beginning-of-line)
-    (call-interactively 'lisp-dedent-adjust-parens)))
-(defun ndu/lisp-indent-adjust-parens ()
-  (interactive)
-  (save-excursion
-    (ndu/smarter-beginning-of-line)
-    (call-interactively 'lisp-indent-adjust-parens)))
 (defun ndu/toggle-follow-split-off ()
   (interactive)
   (delete-other-windows)
@@ -517,14 +510,6 @@ Return the list of results."
     ;; Below is needed to apply the modified `org-emphasis-regexp-components'
     ;; settings from above.
     (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components))
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (evil-local-set-key 'normal (kbd "<M-left>")
-                                  'ndu/lisp-dedent-adjust-parens)))
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (evil-local-set-key 'normal (kbd "<M-right>")
-                                  'ndu/lisp-indent-adjust-parens)))
   (add-hook 'org-mode-hook #'ndu/org-syntax-table-modify)
   (add-hook 'org-mode-hook #'electric-pair-mode)
   (add-hook 'org-mode-hook #'electric-indent-mode)
@@ -663,10 +648,10 @@ Return the list of results."
 (defun ndu/clojure ()
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu/emacs-lisp ()
-  (require 'adjust-parens)
   (add-hook 'emacs-lisp-mode-hook
             (lambda ()
-              (aggressive-indent-mode nil)))
+              (aggressive-indent-mode nil)
+              (electric-indent-mode t)))
   (add-hook 'emacs-lisp-mode-hook
             (lambda ()
               (turn-off-show-smartparens-mode)))
@@ -674,24 +659,7 @@ Return the list of results."
   (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode)
   (add-hook 'emacs-lisp-mode-hook 'paredit-mode)
   (add-hook 'emacs-lisp-mode-hook #'evil-smartparens-mode)
-  (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-  (add-hook 'emacs-lisp-mode-hook #'adjust-parens-mode)
-  (add-hook 'emacs-lisp-mode-hook
-            (lambda ()
-              (evil-local-set-key 'normal (kbd "<M-left>")
-                                  'ndu/lisp-dedent-adjust-parens)))
-  (add-hook 'emacs-lisp-mode-hook
-            (lambda ()
-              (evil-local-set-key 'normal (kbd "<M-right>")
-                                  'ndu/lisp-indent-adjust-parens)))
-  (add-hook 'emacs-lisp-mode-hook
-            (lambda ()
-              (evil-local-set-key 'insert (kbd "<M-left>")
-                                  'ndu/lisp-dedent-adjust-parens)))
-  (add-hook 'emacs-lisp-mode-hook
-            (lambda ()
-              (evil-local-set-key 'insert (kbd "<M-right>")
-                                  'ndu/lisp-indent-adjust-parens))))
+  (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode))
 (defun ndu/c-mode ()
   (ndu/set-hooks '((c-mode-hook (doxymacs-mode
                                  (lambda ()
@@ -728,9 +696,7 @@ Return the list of results."
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages then consider to create a layer, you can also put the
    ;; configuration in `dotspacemacs/config'.helm-R
-   dotspacemacs-additional-packages '(ansi-color
-                                      rg adjust-parens
-                                      org-drill org-tidy
+   dotspacemacs-additional-packages '(ansi-color rg org-drill org-tidy
                                       evil-smartparens ; cdlatex latex-extra latex-math-preview
                                       hydra            ;lsp-mode lsp-ui nov
                                       (evil-ediff
@@ -915,7 +881,7 @@ Return the list of results."
      ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
      ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
      ("of" ndu/toggle-follow-split)         ("oe" ndu/toggle-follow-split-off)
-     ("or" aggressive-indent-mode)          ("oR" org-edit-src-code)
+     ("or" org-edit-src-code)               ("oR" ndu/toggle-indent-mode)
      ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)))
   (setq-default
    org-tags-column -64
