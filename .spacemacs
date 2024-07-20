@@ -853,7 +853,7 @@ Return the list of results."
    dotspacemacs-smooth-scrolling t
    ;; If non-nil smartparens-strict-mode will be enabled in programming modes.
    ;; (default nil)
-   dotspacemacs-smartparens-strict-mode t
+   dotspacemacs-smartparens-strict-mode nil
    ;; Select a scope to highlight delimiters. Possible values are `any',
    ;; `current', `all' or `nil'. Default is `all' (highlight any scope and
    ;; emphasis the current one). (default 'all)
@@ -912,6 +912,8 @@ Return the list of results."
    org-tags-column -64
    dotspacemacs-whitespace-cleanup 'all
    dotspacemacs-check-for-update t
+   blink-matching-paren nil
+   evil-move-beyond-eol t
    spacemacs-yank-indent-threshold 0
    pixel-scroll-precision-mode t
    flycheck-python-pycompile-executable "python3"
