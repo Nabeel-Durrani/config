@@ -79,7 +79,8 @@
                            delim2))))))
 (defun ndu/edit-field ()
   (interactive)
-  (if org-at-table-p
+  (if (or (not (symbolp 'org-at-table-p))
+          (org-at-table-p))
       (progn
         (ndu/shrink)
         (split-window-horizontally)
@@ -520,6 +521,9 @@ Return the list of results."
   (add-hook 'org-mode-hook #'electric-pair-mode)
   (add-hook 'org-mode-hook #'aggressive-indent-mode)
   (add-hook 'org-mode-hook
+            (lambda ()
+              (show-smartparens-mode nil)))
+  (add-hook 'org-mode-hook
             '(lambda ()
                (delete '("\\.pdf\\'" . default) org-file-apps)
                (delete '("\\.png\\'" . default) org-file-apps)
@@ -940,6 +944,7 @@ Return the list of results."
    git-magit-status-fullscreen t
    c-c++-lsp-enable-semantic-highlight t)
   (global-set-key (kbd "M-q") 'fill-paragraph)
+  (show-smartparens-global-mode nil)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on ; ndu/latex ndu/ansi-color ndu/doxymacs
            spacemacs/toggle-highlight-current-line-globally-off
