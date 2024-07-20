@@ -44,7 +44,7 @@
   (message "Starting %s new items" number)
   (sit-for 0.2)
   (seq-map
-    (lambda (loc)
+   (lambda (loc)
      (org-drill-goto-entry loc)
      (message "New leitner entry: %s" (org-drill-get-entry-text))
      (sit-for 0.2)
@@ -70,13 +70,13 @@
   (interactive)
   (unless (not (string= "*Org Table Edit Field*" (buffer-name)))
     (save-excursion
-        (beginning-of-buffer)
-        (kill-matching-lines "^#.*$")
-        (let ((buf (buffer-string)))
-          (kill-matching-lines ".*")
-          (insert (mapconcat 'identity
-                            (split-string buf delim1)
-                            delim2))))))
+      (beginning-of-buffer)
+      (kill-matching-lines "^#.*$")
+      (let ((buf (buffer-string)))
+        (kill-matching-lines ".*")
+        (insert (mapconcat 'identity
+                           (split-string buf delim1)
+                           delim2))))))
 (defun ndu/edit-field ()
   (interactive)
   (if org-at-table-p
@@ -655,8 +655,8 @@ Return the list of results."
   (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode)
   (add-hook 'emacs-lisp-mode-hook 'paredit-mode)
   (add-hook 'emacs-lisp-mode-hook 'aggressive-indent-mode)
-  (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
   (add-hook 'emacs-lisp-mode-hook #'evil-smartparens-mode)
+  (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
   (add-hook 'emacs-lisp-mode-hook #'adjust-parens-mode)
   (add-hook 'emacs-lisp-mode-hook
             (lambda ()
@@ -701,15 +701,8 @@ Return the list of results."
            :variables spacemacs-default-company-backends '(company-files
                                                            company-capf))
           better-defaults markdown
-          syntax-checking  ; gtags java
-                                        ;(lsp :variables lsp-lens-enable t)
-                                        ;(c-c++
-                                        ; :variables
-                                        ; c-c++-adopt-subprojects t
-                                        ; c-c++-backend 'lsp-cclas) dap
-          emacs-lisp ;elfeed mu4e semantic themes-megapack
-                                        ;csv python ess clojure scheme octave
-                                        ;(latex :variables latex-build-command "LaTeX")
+          syntax-checking
+          emacs-lisp                    ;elfeed csv python clojure (latex :variables latex-build-command "LaTeX")
                                         ;(elfeed :variables elfeed-enable-goodies nil)
                                         ;(elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
           (spell-checking :variables spell-checking-enable-by-default nil))
@@ -718,12 +711,10 @@ Return the list of results."
    ;; packages then consider to create a layer, you can also put the
    ;; configuration in `dotspacemacs/config'.helm-R
    dotspacemacs-additional-packages '(ansi-color
-                                      evil-lispy
                                       rg adjust-parens
                                       org-drill org-tidy
-                                      evil-smartparens ; cdlatex
-                                        ;latex-extra latex-math-preview
-                                      hydra ;lsp-mode lsp-ui nov
+                                      evil-smartparens ; cdlatex latex-extra latex-math-preview
+                                      hydra            ;lsp-mode lsp-ui nov
                                       (evil-ediff
                                        :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
                                       ccls)
@@ -852,7 +843,6 @@ Return the list of results."
    ;; point when it reaches the top or bottom of the screen. (default t)
    dotspacemacs-smooth-scrolling t
    ;; If non-nil smartparens-strict-mode will be enabled in programming modes.
-   ;; (default nil)
    dotspacemacs-smartparens-strict-mode nil
    ;; Select a scope to highlight delimiters. Possible values are `any',
    ;; `current', `all' or `nil'. Default is `all' (highlight any scope and
