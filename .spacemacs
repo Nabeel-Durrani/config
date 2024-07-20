@@ -517,12 +517,20 @@ Return the list of results."
     ;; Below is needed to apply the modified `org-emphasis-regexp-components'
     ;; settings from above.
     (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components))
-  (add-hook 'org-mode-hook #'ndu/org-syntax-table-modify)
-  (add-hook 'org-mode-hook #'electric-pair-mode)
-  (add-hook 'org-mode-hook #'aggressive-indent-mode)
   (add-hook 'org-mode-hook
             (lambda ()
-              (show-smartparens-mode nil)))
+              (evil-local-set-key 'normal (kbd "<M-left>")
+                                  'ndu/lisp-dedent-adjust-parens)))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (evil-local-set-key 'normal (kbd "<M-right>")
+                                  'ndu/lisp-indent-adjust-parens)))
+  (add-hook 'org-mode-hook #'ndu/org-syntax-table-modify)
+  (add-hook 'org-mode-hook #'electric-pair-mode)
+  (add-hook 'org-mode-hook #'electric-indent-mode)
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (turn-off-show-smartparens-mode)))
   (add-hook 'org-mode-hook
             '(lambda ()
                (delete '("\\.pdf\\'" . default) org-file-apps)
@@ -656,9 +664,15 @@ Return the list of results."
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu/emacs-lisp ()
   (require 'adjust-parens)
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (aggressive-indent-mode nil)))
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (turn-off-show-smartparens-mode)))
+  (add-hook 'emacs-lisp-mode-hook 'electric-indent-mode)
   (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode)
   (add-hook 'emacs-lisp-mode-hook 'paredit-mode)
-  (add-hook 'emacs-lisp-mode-hook 'aggressive-indent-mode)
   (add-hook 'emacs-lisp-mode-hook #'evil-smartparens-mode)
   (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
   (add-hook 'emacs-lisp-mode-hook #'adjust-parens-mode)
@@ -901,6 +915,7 @@ Return the list of results."
      ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
      ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
      ("of" ndu/toggle-follow-split)         ("oe" ndu/toggle-follow-split-off)
+     ("or" aggressive-indent-mode)          ("oR" org-edit-src-code)
      ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)))
   (setq-default
    org-tags-column -64
@@ -939,12 +954,13 @@ Return the list of results."
    scroll-margin 20
    org-use-property-inheritance t
    org-highest-priority ?A
+   show-smartparens-global-mode nil
    org-lowest-priority  ?E
    org-default-priority org-lowest-priority
    git-magit-status-fullscreen t
    c-c++-lsp-enable-semantic-highlight t)
   (global-set-key (kbd "M-q") 'fill-paragraph)
-  (show-smartparens-global-mode nil)
+  (turn-off-show-smartparens-mode)
   (mapc #'funcall
         #'(spacemacs/toggle-menu-bar-on ; ndu/latex ndu/ansi-color ndu/doxymacs
            spacemacs/toggle-highlight-current-line-globally-off
