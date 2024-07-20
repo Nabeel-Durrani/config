@@ -1,8 +1,32 @@
+(defun ndu/smarter-beginning-of-line ()
+  "Move point to first beginning-of-line or non-whitespace character or first non-whitespace after comment."
+  (interactive "^")
+  (let ((oldpos (point))
+        (indentpos (progn
+                     (back-to-indentation)
+                     (point)))
+        (textpos (progn
+                   (beginning-of-line-text)
+                   (point))))
+    (cond ((> oldpos textpos) (beginning-of-line-text))
+          ((and (<= oldpos textpos) (> oldpos indentpos))  (back-to-indentation))
+          ((and (<= oldpos indentpos) (> oldpos (line-beginning-position))) (beginning-of-line))
+          (t (beginning-of-line-text)))))
 (defun ndu/toggle-follow-split ()
   (interactive)
-  (if (symbolp follow-mode)
-      (follow-delete-other-windows-and-split)
-    (turn-off-follow-mode)))
+  (if (and (symbolp follow-mode) follow-mode)
+      (turn-off-follow-mode)
+    (follow-delete-other-windows-and-split)))
+(defun ndu/lisp-dedent-adjust-parens ()
+  (interactive)
+  (save-excursion
+    (ndu/smarter-beginning-of-line)
+    (call-interactively 'lisp-dedent-adjust-parens)))
+(defun ndu/lisp-indent-adjust-parens ()
+  (interactive)
+  (save-excursion
+    (ndu/smarter-beginning-of-line)
+    (call-interactively 'lisp-indent-adjust-parens)))
 (defun ndu/toggle-follow-split-off ()
   (interactive)
   (delete-other-windows)
@@ -20,7 +44,7 @@
   (message "Starting %s new items" number)
   (sit-for 0.2)
   (seq-map
-   (lambda (loc)
+    (lambda (loc)
      (org-drill-goto-entry loc)
      (message "New leitner entry: %s" (org-drill-get-entry-text))
      (sit-for 0.2)
@@ -55,12 +79,12 @@
                             delim2))))))
 (defun ndu/edit-field ()
   (interactive)
-  (if (org-at-table-p)
-    (progn
-      (ndu/shrink)
-      (split-window-horizontally)
-      (org-table-edit-field nil)
-      (ndu/split-table-field))
+  (if org-at-table-p
+      (progn
+        (ndu/shrink)
+        (split-window-horizontally)
+        (org-table-edit-field nil)
+        (ndu/split-table-field))
     (progn ; If we're already in the org-table-edit-field buffer
       (ndu/unsplit-table-field)
       (org-ctrl-c-ctrl-c)
@@ -79,31 +103,27 @@
   (save-excursion
     (funcall next-fn)
     (unless (org-at-table-p)
-        (progn
-          (funcall prev-fn)
-          (org-table-insert-row 1))))
+      (progn
+        (funcall prev-fn)
+        (org-table-insert-row 1))))
   (funcall next-fn)
   (org-table-edit-field nil)
   (ndu/split-table-field))
 (defun ndu/expand ()
   (interactive)
-  ;(spacemacs/toggle-truncate-lines-on)
   (org-table-expand)
   (ndu/show-tbmlfm))
 (defun ndu/expand-all ()
   (interactive)
-  ;(spacemacs/toggle-truncate-lines-on)
   (org-table-map-tables #'org-table-expand t)
   (org-table-map-tables #'org-table-align t)
   (ndu/show-tbmlfm))
 (defun ndu/shrink ()
   (interactive)
-  ;(spacemacs/toggle-truncate-lines-off)
   (ndu/hide-tbmlfm)
   (org-table-shrink))
 (defun ndu/shrink-all ()
   (interactive)
-  ;(spacemacs/toggle-truncate-lines-off)
   (org-table-map-tables #'org-table-shrink t)
   (org-table-map-tables #'org-table-align t)
   (ndu/hide-tbmlfm))
@@ -465,9 +485,9 @@ Return the list of results."
   (setq available-windows
         (delete (selected-window) (window-list)))
   (setq new-window
-         (or (car available-windows)
-             (split-window-right)
-             (split-window-sensibly)))
+        (or (car available-windows)
+            (split-window-right)
+            (split-window-sensibly)))
   (select-window new-window)
   (org-id-open path _)
   (evil-window-move-far-right))
@@ -476,8 +496,8 @@ Return the list of results."
 (defun ndu/org-drill-time-to-inactive-org-timestamp (time)
   "Convert TIME into org-mode timestamp."
   (format-time-string
-    (concat "[" (cdr org-time-stamp-formats) "]")
-    time))
+   (concat "[" (cdr org-time-stamp-formats) "]")
+   time))
 (defun ndu/org-mode ()
   (load "~/.emacs.d/manuallyInstalled/vanish.el")
   (require 'vanish)
@@ -631,9 +651,29 @@ Return the list of results."
 (defun ndu/clojure ()
   (setq-default clojure-enable-fancify-symbols t))
 (defun ndu/emacs-lisp ()
+  (require 'adjust-parens)
   (add-hook 'emacs-lisp-mode-hook 'prettify-symbols-mode)
   (add-hook 'emacs-lisp-mode-hook 'paredit-mode)
-  (add-hook 'emacs-lisp-mode-hook 'aggressive-indent-mode))
+  (add-hook 'emacs-lisp-mode-hook 'aggressive-indent-mode)
+  (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
+  (add-hook 'emacs-lisp-mode-hook #'evil-smartparens-mode)
+  (add-hook 'emacs-lisp-mode-hook #'adjust-parens-mode)
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (evil-local-set-key 'normal (kbd "<M-left>")
+                                  'ndu/lisp-dedent-adjust-parens)))
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (evil-local-set-key 'normal (kbd "<M-right>")
+                                  'ndu/lisp-indent-adjust-parens)))
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (evil-local-set-key 'insert (kbd "<M-left>")
+                                  'ndu/lisp-dedent-adjust-parens)))
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (evil-local-set-key 'insert (kbd "<M-right>")
+                                  'ndu/lisp-indent-adjust-parens))))
 (defun ndu/c-mode ()
   (ndu/set-hooks '((c-mode-hook (doxymacs-mode
                                  (lambda ()
@@ -645,52 +685,54 @@ Return the list of results."
    You should not put any user code in this function besides modifying the
    variable values."
   (setq-default
-    ;; Base distribution to use. This is a layer contained in the directory
-    ;; `+distribution'. For now available distributions are `spacemacs-base'
-    ;; or `spacemacs'. (default 'spacemacs)
-    dotspacemacs-distribution 'spacemacs
-    ;; List of additional paths where to look for configuration layers.
-    ;; Paths must have a trailing slash (i.e. `~/.mycontribs/')
-    dotspacemacs-configuration-layer-path '()
-    ;; List of configuration layers to load. If it is the symbol `all' instead
-    ;; of a list then all discovered layers will be installed.
-    dotspacemacs-configuration-layers
-    '(html osx org git pdf ivy
-      (shell :variables shell-default-shell 'eshell)
-      (auto-completion
-       :variables spacemacs-default-company-backends '(company-files
-                                                       company-capf))
-      better-defaults markdown
-      syntax-checking  ; gtags java
-      ;(lsp :variables lsp-lens-enable t)
-     ;(c-c++
-     ; :variables
-     ; c-c++-adopt-subprojects t
-     ; c-c++-backend 'lsp-cclas) dap
-      emacs-lisp ;elfeed mu4e semantic themes-megapack
-      ;csv python ess clojure scheme octave
-      ;(latex :variables latex-build-command "LaTeX")
-      ;(elfeed :variables elfeed-enable-goodies nil)
-      ;(elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
-      (spell-checking :variables spell-checking-enable-by-default nil))
-    ; List of additional packages that will be installed without being
-    ;; wrapped in a layer. If you need some configuration for these
-    ;; packages then consider to create a layer, you can also put the
-    ;; configuration in `dotspacemacs/config'.helm-R
-    dotspacemacs-additional-packages '(ansi-color rg
-                                       org-drill org-tidy
-                                       ;evil-smartparens cdlatex
-                                       ;latex-extra latex-math-preview
-                                       hydra ;lsp-mode lsp-ui nov
+   ;; Base distribution to use. This is a layer contained in the directory
+   ;; `+distribution'. For now available distributions are `spacemacs-base'
+   ;; or `spacemacs'. (default 'spacemacs)
+   dotspacemacs-distribution 'spacemacs
+   ;; List of additional paths where to look for configuration layers.
+   ;; Paths must have a trailing slash (i.e. `~/.mycontribs/')
+   dotspacemacs-configuration-layer-path '()
+   ;; List of configuration layers to load. If it is the symbol `all' instead
+   ;; of a list then all discovered layers will be installed.
+   dotspacemacs-configuration-layers
+   '(html osx org git pdf ivy
+          (shell :variables shell-default-shell 'eshell)
+          (auto-completion
+           :variables spacemacs-default-company-backends '(company-files
+                                                           company-capf))
+          better-defaults markdown
+          syntax-checking  ; gtags java
+                                        ;(lsp :variables lsp-lens-enable t)
+                                        ;(c-c++
+                                        ; :variables
+                                        ; c-c++-adopt-subprojects t
+                                        ; c-c++-backend 'lsp-cclas) dap
+          emacs-lisp ;elfeed mu4e semantic themes-megapack
+                                        ;csv python ess clojure scheme octave
+                                        ;(latex :variables latex-build-command "LaTeX")
+                                        ;(elfeed :variables elfeed-enable-goodies nil)
+                                        ;(elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
+          (spell-checking :variables spell-checking-enable-by-default nil))
+                                        ; List of additional packages that will be installed without being
+   ;; wrapped in a layer. If you need some configuration for these
+   ;; packages then consider to create a layer, you can also put the
+   ;; configuration in `dotspacemacs/config'.helm-R
+   dotspacemacs-additional-packages '(ansi-color
+                                      evil-lispy
+                                      rg adjust-parens
+                                      org-drill org-tidy
+                                      evil-smartparens ; cdlatex
+                                        ;latex-extra latex-math-preview
+                                      hydra ;lsp-mode lsp-ui nov
                                       (evil-ediff
                                        :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
-                                       ccls)
-    ;; A list of packages and/or extensions that will not be install and loaded
-    dotspacemacs-excluded-packages '(org-projectile)
-    ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
-    ;; are declared in a layer which is not a member of
-    ;; the list `dotspacemacs-configuration-layers'. (default t)
-    dotspacemacs-delete-orphan-packages t))
+                                      ccls)
+   ;; A list of packages and/or extensions that will not be install and loaded
+   dotspacemacs-excluded-packages '(org-projectile)
+   ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
+   ;; are declared in a layer which is not a member of
+   ;; the list `dotspacemacs-configuration-layers'. (default t)
+   dotspacemacs-delete-orphan-packages t))
 (defun dotspacemacs/init ()
   "Initialization function.
    This function is called at the very startup of Spacemacs initialization
