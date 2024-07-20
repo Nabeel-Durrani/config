@@ -1,4 +1,5 @@
 (defun ndu/toggle-indent-mode ()
+  (interactive)
   (electric-indent-mode)
   (aggressive-indent-mode))
 (defun ndu/smarter-beginning-of-line ()
