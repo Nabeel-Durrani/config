@@ -1,3 +1,12 @@
+(defconst olivetti-packages
+  '(olivetti))
+(defun olivetti/init-olivetti ()
+  (use-package olivetti))
+(defun ndu/toggle-hscroll-mode ()
+  (interactive)
+  (if (eq auto-hscroll-mode 'current-line)
+      (setq auto-hscroll-mode t)
+    (setq auto-hscroll-mode 'current-line)))
 (defun ndu/toggle-indent-mode ()
   (interactive)
   (cond ((and (bound-and-true-p electric-indent-mode)
@@ -538,7 +547,6 @@ Return the list of results."
                     org-level-5))
       (set-face-attribute face nil :weight 'regular :height 1.0))
     (ndu/set-hooks '(;(org-mode-hook (turn-on-org-cdlatex))
-                     (org-mode-hook (visual-fill-column-mode))
                      (org-mode-hook (auto-fill-mode))
                      (org-mode-hook (vanish-mode))))
     ;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
@@ -677,7 +685,7 @@ Return the list of results."
    ;; List of configuration layers to load. If it is the symbol `all' instead
    ;; of a list then all discovered layers will be installed.
    dotspacemacs-configuration-layers
-   '(html osx org git pdf ivy
+   '(html osx org git pdf ivy olivetti
           (shell :variables shell-default-shell 'eshell)
           (auto-completion
            :variables spacemacs-default-company-backends '(company-files
@@ -692,12 +700,12 @@ Return the list of results."
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages then consider to create a layer, you can also put the
    ;; configuration in `dotspacemacs/config'.helm-R
-   dotspacemacs-additional-packages '(ansi-color rg org-drill org-tidy
-                                      evil-smartparens ; cdlatex latex-extra latex-math-preview
-                                      hydra            ;lsp-mode lsp-ui nov
-                                      (evil-ediff
-                                       :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
-                                      ccls)
+   dotspacemacs-additional-packages '(ansi-color rg org-drill org-tidy olivetti
+                                                 evil-smartparens ; cdlatex latex-extra latex-math-preview
+                                                 hydra            ;lsp-mode lsp-ui nov
+                                                 (evil-ediff
+                                                  :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
+                                                 ccls)
    ;; A list of packages and/or extensions that will not be install and loaded
    dotspacemacs-excluded-packages '(org-projectile)
    ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
@@ -856,6 +864,15 @@ Return the list of results."
           (add-to-list (car x) (cadr x)))
         '((load-path "/opt/homebrew/bin")))
   (add-hook 'before-save-hook 'delete-trailing-whitespace)
+  (add-hook 'text-mode-hook (lambda ()
+                              (interactive)
+                              (message "Olivetti text-mode-hook")
+                              (hidden-mode-line-mode)
+                              (olivetti-mode 1)))
+  (add-hook 'prog-mode-hook (lambda ()
+                              (interactive)
+                              (message "Olivetti prog-mode-hook")
+                              (olivetti-mode 1)))
   (ndu/set-leader
    '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
      ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
@@ -878,19 +895,20 @@ Return the list of results."
      ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
      ("of" ndu/toggle-follow-split)         ("oe" ndu/toggle-follow-split-off)
      ("or" org-edit-src-code)               ("oR" ndu/toggle-indent-mode)
-     ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)))
+     ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)
+     ("oh" ndu/toggle-hscroll-mode)))
   (setq-default
    org-tags-column -64
    dotspacemacs-whitespace-cleanup 'all
    dotspacemacs-check-for-update t
    blink-matching-paren nil
+   auto-hscroll-mode 'current-line
    evil-move-beyond-eol t
    spacemacs-yank-indent-threshold 0
    pixel-scroll-precision-mode t
    flycheck-python-pycompile-executable "python3"
    python-shell-interpreter "python3"
    auto-save-default t
-   visual-fill-column-center-text t
    vterm-always-compile-module t
    org-use-property-inheritance t
                                         ; nov-text-width 60
