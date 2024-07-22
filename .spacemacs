@@ -204,7 +204,7 @@
                   spaces "|       |       |       |      |     |" "\n"
                   spaces "#+TBLFM: "
                          "$4='(org-lookup-first $2 '(remote($3, @I$1..@>..$1)) '(remote($3, @I$7..@>$7)));%.2f::"
-                         "$5='(if (< (string-to-number $4) 100) 1 0)")))
+                         "$5='(if (< (string-to-number $4) 1) 1 0)")))
 (defun ndu/insert-topic-table ()
   (interactive)
   (move-end-of-line 1)
