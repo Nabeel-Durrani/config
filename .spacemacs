@@ -167,7 +167,7 @@
   (interactive)
   (org-insert-heading-after-current)
   (org-cite-insert nil)
-  (ndu/add-outline-tag)
+  (ndu/add-card-tag)
   (evil-open-below nil))
 (defun ndu/add-outline-tag ()
   (interactive)
