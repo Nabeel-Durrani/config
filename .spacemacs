@@ -646,6 +646,9 @@ Return the list of results."
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "n" #'ndu/previous-match)
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" #'ndu/next-match))
 (defun ndu/latex ()
+  (require 'ox-latex)
+  (setq org-latex-inputenc-alist '(("utf8" . "utf8x")))
+  (setq org-latex-default-packages-alist (cons '("mathletters" "ucs" nil) org-latex-default-packages-alist))
   (defun add-envs ()
     (LaTeX-add-environments '("IEEEeqnarray" "alignment")
                             '("IEEEeqnarray*" "alignment")))
@@ -907,7 +910,7 @@ Return the list of results."
   (ndu/set-leader
    '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
      ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
-     ("os" ndu/sync-beorg)                  ("oS" ndu/sync-beorg)
+     ("os" ndu/sync-beorg)                  ("oS" org-latex-export-to-pdf)
      ("oh" ndu/cite-insert-card)            ("oH" ndu/cite-insert-outline)
      ("oj" ndu/add-card-tag)                ("oJ" ndu/remove-card-tag)
      ("ol" ndu/add-outline-tag)             ("oL" ndu/remove-outline-tag)
@@ -969,12 +972,12 @@ Return the list of results."
   (global-set-key (kbd "M-q") 'fill-paragraph)
   (turn-off-show-smartparens-mode)
   (mapc #'funcall
-        #'(spacemacs/toggle-menu-bar-on ; ndu/latex ndu/ansi-color ndu/doxymacs
+        #'(spacemacs/toggle-menu-bar-on
+           ndu/latex
            spacemacs/toggle-highlight-current-line-globally-off
-           global-whitespace-mode ; global-flycheck-mode ndu/nov-mode
-           ndu/org-mode  ; ndu/clojure ndu/c-mode ndu/elfeed-mode
+           global-whitespace-mode
+           ndu/org-mode
            ndu/emacs-lisp))
-                                        ; (ndu/set-hooks '((c++-mode-hook (lsp))))
   ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
   (add-hook 'hack-local-variables-hook (lambda () (setq truncate-lines t)))
