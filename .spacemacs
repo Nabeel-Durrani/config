@@ -157,7 +157,13 @@
   (interactive)
   (org-cite-insert nil)
   (ndu/add-card-tag))
-(defun ndu/cite-insert-heading ()
+(defun ndu/cite-insert-outline ()
+  (interactive)
+  (org-insert-heading-after-current)
+  (org-cite-insert nil)
+  (ndu/add-outline-tag)
+  (evil-open-below nil))
+(defun ndu/cite-insert-card ()
   (interactive)
   (org-insert-heading-after-current)
   (org-cite-insert nil)
@@ -902,7 +908,7 @@ Return the list of results."
    '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
      ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
      ("os" ndu/sync-beorg)                  ("oS" ndu/sync-beorg)
-     ("oh" ndu/cite-insert-heading)         ("oH" org-cut-subtree)
+     ("oh" ndu/cite-insert-card)            ("oH" ndu/cite-insert-outline)
      ("oj" ndu/add-card-tag)                ("oJ" ndu/remove-card-tag)
      ("ol" ndu/add-outline-tag)             ("oL" ndu/remove-outline-tag)
      ("ok" ndu/add-question-tag)            ("oK" ndu/remove-question-tag)
@@ -917,7 +923,7 @@ Return the list of results."
      ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
      ("of" ndu/toggle-follow-split)         ("oe" ndu/toggle-follow-split-off)
      ("or" org-edit-src-code)               ("oR" ndu/toggle-indent-mode)
-     ("oc" ndu/toggle-hscroll-mode)))
+     ("oc" org-cut-subtree)                 ("oC" ndu/toggle-hscroll-mode)))
   (setq-default
    org-tags-column -64
    dotspacemacs-whitespace-cleanup 'all
