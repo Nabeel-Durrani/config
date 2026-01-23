@@ -7,6 +7,10 @@
   (if (eq auto-hscroll-mode 'current-line)
       (setq auto-hscroll-mode t)
     (setq auto-hscroll-mode 'current-line)))
+
+(defun ndu/sync-beorg ()
+  (interactive)
+  (async-shell-command "cp ~/org/*.org ~/org/*.bib ~/Dropbox/org"))
 (defun ndu/toggle-indent-mode ()
   (interactive)
   (cond ((and (bound-and-true-p electric-indent-mode)
@@ -133,6 +137,36 @@
 (defun ndu/add-tag (tag)
   (interactive)
   (org-toggle-tag tag 'on))
+(defun ndu/remove-question-tag ()
+  (interactive)
+  (ndu/remove-tag "question"))
+(defun ndu/add-question-tag ()
+  (interactive)
+  (ndu/add-tag "question"))
+(defun ndu/remove-card-tag ()
+  (interactive)
+  (ndu/remove-tag "card"))
+(defun ndu/add-card-tag ()
+  (interactive)
+  (ndu/add-tag "card"))
+(defun ndu/remove-outline-tag ()
+  (interactive)
+  (ndu/remove-tag "card")
+  (ndu/remove-tag "outline"))
+(defun ndu/cite-insert ()
+  (interactive)
+  (org-cite-insert nil)
+  (ndu/add-card-tag))
+(defun ndu/cite-insert-heading ()
+  (interactive)
+  (org-insert-heading-after-current)
+  (org-cite-insert nil)
+  (ndu/add-outline-tag)
+  (evil-open-below nil))
+(defun ndu/add-outline-tag ()
+  (interactive)
+  (ndu/add-tag "card")
+  (ndu/add-tag "outline"))
 (defun ndu/remove-drill-tag ()
   (interactive)
   (ndu/remove-tag "drill"))
@@ -551,26 +585,14 @@ Return the list of results."
                      (org-mode-hook (vanish-mode))))
     ;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
     (setq org-capture-templates
-          `(("w" "note topic" plain (file+headline "~/org/misc-notes-items.org" "Topics")
-             "%(ndu/insert-task-topic-item)\n   %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("e" "note item" plain (file+headline "~/org/misc-notes-items.org" "Items")
-             "%(ndu/insert-note-item)%(org-set-tags-command)\n   %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("r" "note" plain (file+headline "~/org/gtd.org" "Notes")
+          `(("a" "map" plain (file+headline "~/org/main.org" "Map")
              "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("a" "task topic" plain (file+headline "~/org/gtd.org" "Task topics")
-             "%(ndu/insert-task-topic-item)\n   %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("s" "task item" plain (file+headline "~/org/gtd.org" "Task items")
-             "%(ndu/insert-task-topic-item)\n   %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("d" "GTD topic" plain (file+headline "~/org/gtd.org" "Topics")
-             "%(ndu/insert-task-topic-item)\n   %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)
-            ("f" "task blocks" plain (file+headline "~/org/gtd.org" "Task blocks")
-             "%(ndu/insert-task-topic-item)\n   %?"
-             :prepend t :empty-lines-before 0 :empty-lines-after 0)))
+            ("s" "tasks" plain (file+headline "~/org/main.org" "Tasks")
+             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("d" "note" plain (file+headline "~/org/main.org" "Notes")
+             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
+            ("f" "revision" plain (file+headline "~/org/main.org" "Revision")
+             "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)))
     (add-hook 'org-capture-after-finalize-hook 'ndu/align-tags)
     (add-hook 'org-mode-hook '(lambda ()
                                 (setq-local header-line-format (list '(:eval (substring-no-properties
@@ -685,17 +707,18 @@ Return the list of results."
    ;; List of configuration layers to load. If it is the symbol `all' instead
    ;; of a list then all discovered layers will be installed.
    dotspacemacs-configuration-layers
-   '(html osx org git pdf ivy olivetti
-          (shell :variables shell-default-shell 'eshell)
-          (auto-completion
-           :variables spacemacs-default-company-backends '(company-files
-                                                           company-capf))
-          better-defaults markdown
-          syntax-checking
-          emacs-lisp                    ;elfeed csv python clojure (latex :variables latex-build-command "LaTeX")
+   '(python
+     html osx org git pdf ivy olivetti
+     (shell :variables shell-default-shell 'eshell)
+     (auto-completion
+      :variables spacemacs-default-company-backends '(company-files
+                                                      company-capf))
+     better-defaults markdown
+     syntax-checking
+     emacs-lisp                    ;elfeed csv python clojure (latex :variables latex-build-command "LaTeX")
                                         ;(elfeed :variables elfeed-enable-goodies nil)
                                         ;(elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
-          (spell-checking :variables spell-checking-enable-by-default nil))
+     (spell-checking :variables spell-checking-enable-by-default nil))
                                         ; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages then consider to create a layer, you can also put the
@@ -878,17 +901,14 @@ Return the list of results."
   (ndu/set-leader
    '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
      ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
-     ("ob" ndu/insert-blocks-table)         ("oB" ndu/insert-blocks-task)
-     ("ot" ndu/insert-topic-table)          ("oT" ndu/insert-item-table)
-     ("oa" org-drill-again)                 ("oA" org-drill-resume)
-     ("os" org-drill-leitner)               ("oS" ndu/leitner-for-tag)
-     ("oc" ndu/add-cached-tag)              ("oC" ndu/remove-cached-tag)
-     ("od" ndu/add-drill-tag)               ("oD" ndu/remove-drill-tag)
-     ("ol" ndu/add-review-tag)              ("oL" ndu/remove-review-tag)
-     ("ok" ndu/add-leitner-tag)             ("oK" ndu/remove-leitner-tag)
+     ("os" ndu/sync-beorg)                  ("oS" ndu/sync-beorg)
+     ("oh" ndu/cite-insert-heading)         ("oH" org-cut-subtree)
+     ("oj" ndu/add-card-tag)                ("oJ" ndu/remove-card-tag)
+     ("ol" ndu/add-outline-tag)             ("oL" ndu/remove-outline-tag)
+     ("ok" ndu/add-question-tag)            ("oK" ndu/remove-question-tag)
      ("ov" ndu/expand)                      ("oV" ndu/expand-all)
      ("og" ndu/align-tags)                  ("oG" vanish-mode)
-     ("oi" ndu/update-tables)               ("oI" ndu/table-edit-formulas)
+     ("oi" ndu/cite-insert)                 ("oI" org-cite-insert)
      ("op" ndu/shrink)                      ("oP" ndu/shrink-all)
      ("oY"  ndu/insert-last-stored-link)    ("oy" org-store-link)
      ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
@@ -897,8 +917,7 @@ Return the list of results."
      ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
      ("of" ndu/toggle-follow-split)         ("oe" ndu/toggle-follow-split-off)
      ("or" org-edit-src-code)               ("oR" ndu/toggle-indent-mode)
-     ("o<"  ndu/reset-leitner-for-tag)      ("o>" ndu/add-leitner-tag-to-review)
-     ("oh" ndu/toggle-hscroll-mode)))
+     ("oc" ndu/toggle-hscroll-mode)))
   (setq-default
    org-tags-column -64
    dotspacemacs-whitespace-cleanup 'all
@@ -963,7 +982,6 @@ Return the list of results."
                   ("C->"    #'ndu/next-column-edit)
                   ("C-:"    #'ndu/edit-field)
                   ("C-;"    #'counsel-outline)) t)
-  (find-file "~/org/misc-notes-items.org")
-  (find-file "~/org/gtd.org")
+  (find-file "~/org/main.org")
   (line-number-mode nil)
   (vanish-set-hide 'tblfm t))
