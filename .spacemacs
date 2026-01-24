@@ -10,7 +10,7 @@
 
 (defun ndu/sync-beorg ()
   (interactive)
-  (async-shell-command "cp ~/org/*.org ~/org/*.bib ~/Dropbox/org"))
+  (call-process-shell-command "rsync ~/org/*.org ~/org/*.bib ~/Dropbox/org &" nil 0))
 (defun ndu/toggle-indent-mode ()
   (interactive)
   (cond ((and (bound-and-true-p electric-indent-mode)
@@ -969,6 +969,13 @@ Return the list of results."
    org-default-priority org-lowest-priority
    git-magit-status-fullscreen t
    c-c++-lsp-enable-semantic-highlight t)
+  (custom-set-variables
+   '(org-link-frame-setup
+     '((vm . vm-visit-folder-other-frame)
+       (vm-imap . vm-visit-imap-folder-other-frame)
+       (gnus . org-gnus-no-new-news)
+       (file . find-file)
+       (wl . wl-other-frame))))
   (global-set-key (kbd "M-q") 'fill-paragraph)
   (turn-off-show-smartparens-mode)
   (mapc #'funcall
@@ -977,6 +984,7 @@ Return the list of results."
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            ndu/org-mode
+           tab-bar-mode
            ndu/emacs-lisp))
   ;; Suppress eshell warnings
   (custom-set-variables '(warning-suppress-types '((:warning))))
