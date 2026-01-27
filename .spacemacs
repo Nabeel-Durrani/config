@@ -7,10 +7,9 @@
   (if (eq auto-hscroll-mode 'current-line)
       (setq auto-hscroll-mode t)
     (setq auto-hscroll-mode 'current-line)))
-
 (defun ndu/sync-beorg ()
   (interactive)
-  (call-process-shell-command "rsync ~/org/*.org ~/org/*.bib ~/Dropbox/org &" nil 0))
+  (call-process-shell-command "rsync ~/org/*.org ~/org/*.bib ~/Dropbox/org &; rsync ~/org/*.pdf ~/Dropbox/UoCdocs &" nil 0))
 (defun ndu/toggle-indent-mode ()
   (interactive)
   (cond ((and (bound-and-true-p electric-indent-mode)
@@ -42,19 +41,6 @@
   (interactive)
   (ndu/expand)
   (org-table-edit-formulas))
-(defun ndu/org-drill-leitner-start-box (number)
-  "Start leitner at box 4 instead of 1"
-  (message "Starting %s new items" number)
-  (sit-for 0.2)
-  (seq-map
-   (lambda (loc)
-     (org-drill-goto-entry loc)
-     (message "New leitner entry: %s" (org-drill-get-entry-text))
-     (sit-for 0.2)
-     (org-set-property "DRILL_LEITNER_BOX" "4"))
-   (seq-take
-    (org-drill-shuffle (seq-copy org-drill-leitner-unboxed-entries))
-    number)))
 (defun ndu/previous-match ()
   (interactive)
   (previous-error)
@@ -173,46 +159,6 @@
   (interactive)
   (ndu/add-tag "card")
   (ndu/add-tag "outline"))
-(defun ndu/remove-drill-tag ()
-  (interactive)
-  (ndu/remove-tag "drill"))
-(defun ndu/add-drill-tag ()
-  (interactive)
-  (ndu/add-tag "drill"))
-(defun ndu/remove-cached-tag ()
-  (interactive)
-  (ndu/remove-tag "cached"))
-(defun ndu/add-cached-tag ()
-  (interactive)
-  (ndu/add-tag "cached"))
-(defun ndu/add-leitner-tag-to-review ()
-  (interactive)
-  (org-tidy-toggle)
-  (org-map-entries #'ndu/remove-leitner-properties "review")
-  (org-map-entries #'ndu/add-leitner-tag           "review")
-  (ndu/align-tags)
-  (org-tidy-toggle))
-(defun ndu/leitner-for-tag ()
-  (interactive)
-  (org-map-entries #'ndu/remove-leitner-tag "review")
-  (let ((tag (thing-at-point 'word 'no-properties)))
-    (org-map-entries #'ndu/add-leitner-tag tag)
-    (org-drill-leitner)
-    (org-map-entries #'ndu/remove-leitner-tag tag)
-    (org-map-entries #'ndu/add-leitner-tag "review")))
-(defun ndu/reset-leitner-for-tag ()
-  (interactive)
-  (org-map-entries #'ndu/remove-leitner-properties (thing-at-point 'word 'no-properties)))
-(defun ndu/add-leitner-tag ()
-  (interactive)
-  (ndu/add-tag "leitner"))
-(defun ndu/remove-leitner-properties ()
-  (interactive)
-  (org-delete-property "DRILL_LEITNER_BOX")
-  (org-delete-property "ID"))
-(defun ndu/remove-leitner-tag ()
-  (interactive)
-  (ndu/remove-tag "leitner"))
 (defun ndu/add-review-tag ()
   (interactive)
   (ndu/add-tag "review"))
@@ -222,79 +168,6 @@
 (defun ndu/align-tags ()
   (interactive)
   (org-set-tags-command '(4))) ; '(4) is the universal argument
-(defun ndu/insert-blocks-task ()
-  (interactive)
-  (move-end-of-line 1)
-  (newline-and-indent)
-  (setq spaces (make-string (current-column) ?\s))
-  (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
-           spaces "| <10>  | <10>  | <10>  | <3> |"     "\n"
-           spaces "| I-TBL | I-TSK | B-TBL | BLK |"     "\n"
-           spaces "|-------+-------+-------+-----|"     "\n"
-           spaces "|       |       |       |     |")))
-(defun ndu/insert-blocks-table ()
-  (interactive)
-  (move-end-of-line 1)
-  (newline-and-indent)
-  (setq spaces (make-string (current-column) ?\s))
-  (insert (concat "#+NAME: " (org-entry-get nil "ITEM")           "\n"
-                  spaces "| <10>  | <10>  | <10>  | <5>  | <3> |" "\n"
-                  spaces "| I-TBL | B-TBL | T-TBL | PROG | BLK |" "\n"
-                  spaces "|-------+-------+-------+------+-----|" "\n"
-                  spaces "|       |       |       |      |     |" "\n"
-                  spaces "#+TBLFM: "
-                         "$4='(org-lookup-first $2 '(remote($3, @I$1..@>..$1)) '(remote($3, @I$7..@>$7)));%.2f::"
-                         "$5='(if (< (string-to-number $4) 1) 1 0)")))
-(defun ndu/insert-topic-table ()
-  (interactive)
-  (move-end-of-line 1)
-  (newline-and-indent)
-  (setq spaces (make-string (current-column) ?\s))
-  (insert (concat "#+NAME: " (org-entry-get nil "ITEM")                              "\n"
-           spaces "| <10>  | <0>   | <15>       | <3>   | <0>   | <0>   | <0>  | <0> | <0>     |" "\n"
-           spaces "| I-TBL | M-IMP | M-IMP-DESC | R-IMP | S-EFF | I-PRI | PROG | TSK | TSK-PRI |" "\n"
-           spaces "|-------+-------+------------+-------+-------+-------+------+-----+---------|" "\n"
-           spaces "|       |       |            |       |       |       |      |     |         |" "\n"
-           spaces "#+TBLFM: "
-                  "$2=vmax(remote($1,@I$2..@>$2))::"
-                  "$3='(org-lookup-first $2 '(remote($1, @I$2..@>$2)) '(remote($1, @I$12..@>$12)))::"
-                  "$4='(if (> (string-to-number $4) 0) $4 5)::"
-                  "$5=max(min(vsum(remote($1, @I$8..@>$8)), 1000), 0.01);%.2f::"
-                  "$6=(remote($1, @I$4..@>$4)/$5)*remote($1, @I$9..@>$9);%.2f"
-                  "$7=vmean(remote($1,@I$7..@>$7));%.2f::"
-                  "$8='(org-lookup-first $9 '(remote($1, @I$9..@>$9)) '(remote($1, @I$1..@>$1)))::"
-                  "$9=vmax(remote($1, @I$9..@>$9));%.2f")))
-(defun ndu/insert-item-table ()
-  (interactive)
-  (move-end-of-line 1)
-  (newline-and-indent)
-  (let ((spaces        (make-string (current-column) ?\s))
-        (topicTasksTbl (read-from-minibuffer "Topic items table: "    nil nil nil nil "topicTasksTemplate"))
-        (blocksTbl     (read-from-minibuffer "Blocking items table: " nil nil nil nil "blocksTbl"))
-        (blocksTsk     (read-from-minibuffer "Blocking tasks table: " nil nil nil nil "blocksTsk")))
-    (insert (concat "#+NAME: " (org-entry-get nil "ITEM") "\n"
-                    spaces "| <0> | <1> | <1> | <3> | <0>   | <0> | <1>  | <0> | <5> | <0>   | <0>  | <10> |"
-                    "\n"
-                    spaces "| TSK | IMP | UGH | TIM | A-IMP | BLK | DONE | EFF | PRI | PRI-N | MAYB | DESC |"
-                    "\n"
-                    spaces "|-----+-----+-----+-----+-------+-----+------+-----+-----+-------+------+------|"
-                    "\n"
-                    spaces "|     |     |     |     |       |     |      |     |     |       |      |      |"
-                    "\n"
-                    spaces "#+TBLFM: "
-                           "$1=@#-2::"
-                           "$5='(ndu/get-adjusted-importance" " " "\"" topicTasksTbl "\"" " " "$2);%.2f::"
-                           "$6='(ndu/get-blocks" " " "\"" blocksTbl "\"" " "
-                                                     "\"" blocksTsk "\"" " " "$1)::"
-                           "$8=(1-$7)*min(exp(4*min(vsum(@I$6..@>$6), 5))*$4,100);%.2f::"
-                           "$9=" "(1-$6)*(1-$7)" "*" "(remote(constantsTable,@5$3)^$11)" "*"
-                                 "($5*$3^(remote(constantsTable,@3$3)))^(1/3)" "/" "($8 + $7);%.2f::"
-                           "$10=5*$9/vmax(@3$9..@>$9);%.1f"))))
-(defun ndu/insert-task-topic-item ()
-  (interactive)
-  (let* ((task (read-from-minibuffer "Heading Name: "))
-         (tag  (concat ":" task "@map" ":")))
-   (concat "** " task " " tag)))
 (defun ndu/hide-tbmlfm ()
   (interactive)
   (vanish-set-hide 'tblfm t))
@@ -314,68 +187,6 @@ Return the list of results."
             (apply #'mapcar* function
                    ;; Recurse for rest of elements.
                    (mapcar #'cdr args)))))
-(defun ndu/sum-str-to-num (strs)
-  (apply '+ (mapcar 'string-to-number strs)))
-
-(defun ndu/cmp-pairs (x y)
- (and (eq (car x) (car y))
-      (eq (cadr x) (cadr y))))
-(defun ndu/lookup-all-sum  (val slist rlist &optional predicate)
- (let ((ret (ndu/sum-str-to-num (org-lookup-all
-                                 val
-                                 slist
-                                 rlist))))
-  (if ret ret 0)))
-(defun ndu/get-adjusted-importance (topicTbl importance)
-  (interactive)
-  (let ((itemTbls      (ndu/get-remote-range topicTbl "@I$1..@>$1"))
-        (relImportance (ndu/get-remote-range topicTbl "@I$4..@>$4"))
-        (currTable     (org-entry-get nil "ITEM")))
-    (* 0.2 ; divide relative importance by 5 to get scaling percentage
-       (string-to-number importance)
-       (string-to-number (org-lookup-first currTable itemTbls relImportance)))))
-(defun ndu/get-blocks (blocksTbl blocksTsk tsk)
-  (interactive)
-  (cond ((> (ndu/lookup-all-sum
-             (org-entry-get nil "ITEM")
-             (ndu/get-remote-range blocksTbl "@2$1..@>$1")
-             (ndu/get-remote-range blocksTbl "@2\$>..@>\$>"))
-            0) 1)
-        ((> (let ((tbls (ndu/get-remote-range blocksTsk "@2$1..@>$1"))
-                  (tsks (ndu/get-remote-range blocksTsk "@2$2..@>$2"))
-                  (blks (ndu/get-remote-range blocksTsk "@2$4..@>$4")))
-             (ndu/lookup-all-sum
-              (list (org-entry-get nil "ITEM") tsk)
-              (mapcar* 'list tbls tsks)
-              blks
-              'ndu/cmp-pairs))
-            0) 1)
-        (t 0)))
-(defun ndu/update-tables ()
-  "Similar to org-table-iterate-buffer-tables, but excludes headings with tag 'cached'."
-  (interactive)
-  (let* ((imax 10)
-        (i imax)
-        (checksum (md5 (buffer-string)))
-        c1)
-    (org-with-wide-buffer
-      (catch 'exit
-        (while (> i 0)
-          (setq i (1- i))
-          (org-table-map-tables
-            (lambda ()
-              (unless (member "cached" (org-get-tags))
-                (org-table-recalculate t t)))
-            t)
-          (if (equal checksum (setq c1 (md5 (buffer-string))))
-              (progn
-                ; (org-table-map-tables #'org-table-align t)
-                ; (ndu/hide-tbmlfm)
-                (message "Convergence after %d iterations" (- imax i))
-                (throw 'exit t))
-            (setq checksum c1)))
-        ; (org-table-map-tables #'org-table-align t)
-        (user-error "No convergence after %d iterations" imax)))))
 (defun ndu/insert-last-stored-link ()
   (require 'org)
   (interactive)
@@ -390,89 +201,27 @@ Return the list of results."
 (defun ndu/outline-path ()
   (interactive)
   (string-join (org-get-outline-path t) "/"))
-(defun ndu/insert-note-item ()
-  (interactive)
-   (concat "** " (format-time-string "I-%Y-%m-%d-%H-%M-%S")))
-;; https://github.com/telotortium/emacs-od2ae/blob/main/od2ae.el
-(defun ndu/open-externally()
- (interactive)
- (shell-command (format (concat "open " (browse-url-url-at-point)))))
-(defun ndu/org-screenshot-regular ()
-  (interactive)
-  (setq filename-short
-        (concat (make-temp-name (format-time-string "%Y%m%d%H%M%S")) ".png"))
-  (setq filename
-        ;; note: capture buffer has buffer name null
-        (concat (file-name-nondirectory (if (buffer-file-name)
-                                            (buffer-file-name) "misc"))
-                "_imgs/"
-                filename-short))
-  (insert " ")
-  (ndu/org-screenshot filename-short filename)
-  (org-display-inline-images))
-;; https://stackoverflow.com/questions/17435995/paste-an-image-on-clipboard-to-emacs-org-mode-file-without-saving-it
-(defun ndu/org-screenshot (filename-short filename)
-  "Take a screenshot into a time stamped unique-named file in the same directory as the org-buffer and insert a link to this file."
-  (interactive)
-  (unless (file-exists-p (file-name-directory filename))
-    (make-directory (file-name-directory filename)))
-  ; take screenshot
-  (if (eq system-type 'darwin)
-      (call-process "screencapture" nil nil nil "-i" filename))
-  (if (eq system-type 'gnu/linux)
-      (call-process "import" nil nil nil filename))
-
-  (setq spaces (make-string (current-column) ?\s))
-  ; insert into file if correctly taken
-  (if (file-exists-p filename)
-      (insert (concat "#+NAME: " filename-short "\n"
-                               spaces "#+CAPTION: "
-                               (format-time-string "%F" (current-time)) "\n"
-                               spaces "#+ATTR_ORG: :width 400\n"
-                               spaces "[[file:" filename "]]"))))
-(defun ndu/view-tag (str)
-  "Concat STR with @6-months-ago +unread."
-  (concat "@6-months-ago +unread " str))
-(defun ndu/eww-open (&optional use-generic-p)
-  "elfeed open with eww"
-  (interactive "P")
-  (let ((entries (elfeed-search-selected)))
-    (cl-loop for entry in entries
-             do (elfeed-untag entry 'unread)
-             when (elfeed-entry-link entry)
-             do (eww-browse-url it))
-    (mapc #'elfeed-search-update-entry entries)
-    (unless (use-region-p) (forward-line))))
 (defun ndu/nov-mode ()
   (use-package nov :mode ("\\.epub\\'" . ndu/nov-mode))
   (spacemacs/set-leader-keys-for-major-mode 'nov-mode
-      "g" 'nov-render-document
-      "v" 'nov-view-source
-      "V" 'nov-view-content-source
-      "m" 'nov-display-metadata
-      "n" 'nov-next-document
-      "]" 'nov-next-document
-      "p" 'nov-previous-document
-      "[" 'nov-previous-document
-      "t" 'nov-goto-toc)
+    "g" 'nov-render-document
+    "v" 'nov-view-source
+    "V" 'nov-view-content-source
+    "m" 'nov-display-metadata
+    "n" 'nov-next-document
+    "]" 'nov-next-document
+    "p" 'nov-previous-document
+    "[" 'nov-previous-document
+    "t" 'nov-goto-toc)
   (archive-mode)
   (nov-mode)
   (face-remap-add-relative 'variable-pitch
                            :family "Liberation Serif"
                            :height 1.0))
-(defun ndu/elfeed-mode ()
-  (require 'elfeed)
-  (define-key elfeed-search-mode-map (kbd "m") 'ndu/eww-open)
-  (defhydra ap/elfeed-search-view (elfeed-search-mode-map "d" :color blue) ; press d + (h, j, etc)
-    "Set elfeed-search filter tags."
-    ("h" (elfeed-search-set-filter nil) "Default")
-    ("j" (elfeed-search-set-filter (ndu/view-tag "+left")) "left")
-    ("k" (elfeed-search-set-filter (ndu/view-tag "+news")) "news")
-    ("l" (elfeed-search-set-filter (ndu/view-tag "+foreign")) "foreign")
-    ("b" (elfeed-search-set-filter (ndu/view-tag "+opinion")) "opinion")
-    ("n" (elfeed-search-set-filter (ndu/view-tag "+tech")) "tech"))
-  (add-hook 'eww-after-render-hook 'eww-readable))
-(defun ndu/save-recompile () (interactive) (save-buffer) (recompile))
+(defun ndu/save-recompile ()
+  (interactive)
+  (save-buffer)
+  (recompile))
 (defun ndu/set-leader (binds)
   (mapc (lambda (x)
           (spacemacs/set-leader-keys (car x) (cadr x)))
@@ -531,24 +280,10 @@ Return the list of results."
   (select-window new-window)
   (org-id-open path _)
   (evil-window-move-far-right))
-
-;; bug in org-drill - replace function
-(defun ndu/org-drill-time-to-inactive-org-timestamp (time)
-  "Convert TIME into org-mode timestamp."
-  (format-time-string
-   (concat "[" (cdr org-time-stamp-formats) "]")
-   time))
 (defun ndu/org-mode ()
   (load "~/.emacs.d/manuallyInstalled/vanish.el")
   (require 'vanish)
-  (require 'org-drill)
   (require 'org-collector)
-  ;; start at leitner box 4 instead of 1
-  (advice-add #'org-drill-leitner-start-box
-              :override #'ndu/org-drill-leitner-start-box)
-  ;; bug in org-drill
-  (advice-add #'org-drill-time-to-inactive-org-timestamp
-              :override #'ndu/org-drill-time-to-inactive-org-timestamp)
   (with-eval-after-load 'org
     ;; Allow multiple line Org emphasis markup.
     ;; http://emacs.stackexchange.com/a/13828/115
@@ -589,7 +324,6 @@ Return the list of results."
     (ndu/set-hooks '(;(org-mode-hook (turn-on-org-cdlatex))
                      (org-mode-hook (auto-fill-mode))
                      (org-mode-hook (vanish-mode))))
-    ;; https://orgmode.org/worg/org-contrib/org-drill.html#orgeb853d5
     (setq org-capture-templates
           `(("a" "map" plain (file+headline "~/org/main.org" "Map")
              "  * %?" :prepend t :empty-lines-before 0 :empty-lines-after 0)
@@ -622,20 +356,6 @@ Return the list of results."
                               ("DONE" . (:foreground "purple1" :weight bold)))
      org-directory "~/org"
      org-agenda-files '("~/org")
-     org-drill-cram-hours 0
-     org-drill-leitner-promote-to-drill-p nil
-     org-drill-spaced-repetition-algorithm 'sm2
-     org-drill-hide-item-headings-p t       ; so priorities not clozed
-     org-drill-leech-method nil             ; for reading text
-     org-drill-forgetting-index 100         ; for reading text
-     org-drill-leech-failure-threshold nil  ; for reading text
-     org-drill-scope 'file
-     ;; MobileOrg iphone app
-     ;; http://mobileorg.ncogni.to/doc/getting-started/using-dropbox/
-     ;; Set to the location of your Org files on your local system
-     ;; Set to the name of the file where new notes will be stored
-                                        ; org-mobile-inbox-for-pull "~/org/in.org"
-                                        ; org-mobile-directory "~/windoze/Dropbox/Apps/MobileOrg"
      org-priority-faces '((?A . (:foreground "PaleVioletRed"    :weight bold))
                           (?B . (:foreground "orange"           :weight bold))
                           (?C . (:foreground "SeaGreen"         :weight bold))
@@ -724,20 +444,18 @@ Return the list of results."
                                                       company-capf))
      better-defaults markdown
      syntax-checking
-     emacs-lisp                    ;elfeed csv python clojure (latex :variables latex-build-command "LaTeX")
-                                        ;(elfeed :variables elfeed-enable-goodies nil)
-                                        ;(elfeed :variables rmh-elfeed-org-files (list "~/org/elfeed/feeds.org"))
-     (spell-checking :variables spell-checking-enable-by-default nil))
-                                        ; List of additional packages that will be installed without being
+     emacs-lisp ;csv python clojure (latex :variables latex-build-command "LaTeX")
+     (spell-checking :variables spell-checking-enable-by-default nil)) ; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages then consider to create a layer, you can also put the
    ;; configuration in `dotspacemacs/config'.helm-R
-   dotspacemacs-additional-packages '(ansi-color rg org-drill org-tidy olivetti
-                                                 evil-smartparens ; cdlatex latex-extra latex-math-preview
-                                                 hydra            ;lsp-mode lsp-ui nov
-                                                 (evil-ediff
-                                                  :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
-                                                 ccls)
+   dotspacemacs-additional-packages '(ansi-color
+                                      rg org-tidy olivetti
+                                      evil-smartparens ; cdlatex latex-extra latex-math-preview
+                                      hydra            ;lsp-mode lsp-ui nov
+                                      (evil-ediff
+                                       :location (recipe :fetcher github :repo "emacs-evil/evil-ediff"))
+                                      ccls)
    ;; A list of packages and/or extensions that will not be install and loaded
    dotspacemacs-excluded-packages '(org-projectile)
    ;; If non-nil spacemacs will delete any orphan packages, i.e. packages that
