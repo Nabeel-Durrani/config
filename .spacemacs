@@ -641,10 +641,10 @@ Return the list of results."
      ("o\\" outline-cycle-buffer)           ("o|" org-set-property)
      ("o["  outline-hide-other)             ("o]" outline-show-subtree)
      ("o{"  ndu/set-startup-visibility)     ("o}" outline-hide-body)
-     ("o,"  evil-numbers/dec-at-pt)         ("oo"  org-capture)
-     ("of" ndu/toggle-follow-split)         ("oe" ndu/toggle-follow-split-off)
-     ("or" org-edit-src-code)               ("oR" ndu/toggle-indent-mode)
-     ("oc" org-cut-subtree)                 ("oC" ndu/toggle-hscroll-mode)))
+     ("o,"  evil-numbers/dec-at-pt)         ("oo" org-capture)
+     ("of"  ndu/toggle-follow-split)        ("oe" ndu/toggle-follow-split-off)
+     ("or"  org-edit-src-code)              ("oR" ndu/toggle-indent-mode)
+     ("oc"  org-cut-subtree)                ("oC" ndu/toggle-hscroll-mode)))
   (setq-default
    org-tags-column -64
    dotspacemacs-whitespace-cleanup 'all
