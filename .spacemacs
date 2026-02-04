@@ -437,7 +437,7 @@ Return the list of results."
    ;; of a list then all discovered layers will be installed.
    dotspacemacs-configuration-layers
    '(python
-     html osx org git pdf ivy olivetti
+     pdf-tools html osx org git pdf ivy olivetti
      (shell :variables shell-default-shell 'eshell)
      (auto-completion
       :variables spacemacs-default-company-backends '(company-files
@@ -626,12 +626,13 @@ Return the list of results."
                               (olivetti-mode 1)
                               (visual-line-mode -1)))
   (ndu/set-leader
-   '(("on" ndu/hide-tbmlfm)                 ("om" ndu/show-tbmlfm)
+   '(("om" ndu/hide-tbmlfm)                 ("oM" ndu/show-tbmlfm)
      ("oz" ndu/buffer-backlinks)            ("oZ" ndu/entry-backlinks)
      ("os" ndu/sync-beorg)                  ("oS" org-latex-export-to-pdf)
      ("oh" ndu/cite-insert-card)            ("oH" ndu/cite-insert-outline)
      ("oj" ndu/add-card-tag)                ("oJ" ndu/remove-card-tag)
      ("ol" ndu/add-outline-tag)             ("oL" ndu/remove-outline-tag)
+     ("on" tab-bar-switch-to-next-tab)      ("oN" tab-bar-switch-to-prev-tab)
      ("ok" ndu/add-question-tag)            ("oK" ndu/remove-question-tag)
      ("ov" ndu/expand)                      ("oV" ndu/expand-all)
      ("og" ndu/align-tags)                  ("oG" vanish-mode)
