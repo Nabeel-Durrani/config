@@ -437,7 +437,7 @@ Return the list of results."
    ;; of a list then all discovered layers will be installed.
    dotspacemacs-configuration-layers
    '(python
-     pdf-tools html osx org git pdf ivy olivetti
+     pdf-tools html osx org git pdf olivetti ivy
      (shell :variables shell-default-shell 'eshell)
      (auto-completion
       :variables spacemacs-default-company-backends '(company-files
@@ -450,7 +450,7 @@ Return the list of results."
    ;; packages then consider to create a layer, you can also put the
    ;; configuration in `dotspacemacs/config'.helm-R
    dotspacemacs-additional-packages '(ansi-color
-                                      rg org-tidy olivetti
+                                      rg org-tidy olivetti citar
                                       evil-smartparens ; cdlatex latex-extra latex-math-preview
                                       hydra            ;lsp-mode lsp-ui nov
                                       (evil-ediff
@@ -646,6 +646,17 @@ Return the list of results."
      ("of"  ndu/toggle-follow-split)        ("oe" ndu/toggle-follow-split-off)
      ("or"  org-edit-src-code)              ("oR" ndu/toggle-indent-mode)
      ("oc"  org-cut-subtree)                ("oC" ndu/toggle-hscroll-mode)))
+  (use-package citar
+    :no-require
+    :custom
+    (org-cite-global-bibliography '("~/org/refs.bib"))
+    (org-cite-insert-processor 'citar)
+    (org-cite-follow-processor 'citar)
+    (org-cite-activate-processor 'citar)
+    (citar-bibliography org-cite-global-bibliography)
+    ;; optional: org-cite-insert is also bound to C-c C-x C-@
+    :bind
+    (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
   (setq-default
    org-tags-column -64
    dotspacemacs-whitespace-cleanup 'all
