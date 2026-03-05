@@ -649,7 +649,7 @@ Return the list of results."
   (use-package citar
     :no-require
     :custom
-    (org-cite-global-bibliography '("~/org/refs.bib"))
+    (org-cite-global-bibliography '("/Users/ndu/org/refs.bib"))
     (org-cite-insert-processor 'citar)
     (org-cite-follow-processor 'citar)
     (org-cite-activate-processor 'citar)
