@@ -439,9 +439,7 @@ Return the list of results."
    '(python
      pdf-tools html osx org git pdf olivetti ivy
      (shell :variables shell-default-shell 'eshell)
-     (auto-completion
-      :variables spacemacs-default-company-backends '(company-files
-                                                      company-capf))
+                                        ; (auto-completion ;:variables spacemacs-default-company-backends '(company-files ;company-capf))
      better-defaults markdown
      syntax-checking
      emacs-lisp ;csv python clojure (latex :variables latex-build-command "LaTeX")
