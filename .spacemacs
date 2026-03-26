@@ -137,7 +137,7 @@
   (ndu/add-tag "card"))
 (defun ndu/remove-outline-tag ()
   (interactive)
-  (ndu/remove-tag "card")
+                                        ; (ndu/remove-tag "card")
   (ndu/remove-tag "outline"))
 (defun ndu/cite-insert ()
   (interactive)
@@ -157,7 +157,7 @@
   (evil-open-below nil))
 (defun ndu/add-outline-tag ()
   (interactive)
-  (ndu/add-tag "card")
+                                        ;(ndu/add-tag "card")
   (ndu/add-tag "outline"))
 (defun ndu/add-review-tag ()
   (interactive)
@@ -648,9 +648,11 @@ Return the list of results."
     :no-require
     :custom
     (org-cite-global-bibliography '("/Users/ndu/org/refs.bib"))
+    (citar-library-paths '("/Users/ndu/Documents/refFiles"))
     (org-cite-insert-processor 'citar)
     (org-cite-follow-processor 'citar)
     (org-cite-activate-processor 'citar)
+    (citar-file-open-functions '((t . citar-file-open-external)))
     (citar-bibliography org-cite-global-bibliography)
     ;; optional: org-cite-insert is also bound to C-c C-x C-@
     :bind
