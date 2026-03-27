@@ -648,7 +648,7 @@ Return the list of results."
     :no-require
     :custom
     (org-cite-global-bibliography '("/Users/ndu/org/refs.bib"))
-    (citar-library-paths '("/Users/ndu/Documents/refFiles"))
+    (citar-library-paths '("/Users/ndu/Public/refFiles"))
     (org-cite-insert-processor 'citar)
     (org-cite-follow-processor 'citar)
     (org-cite-activate-processor 'citar)
