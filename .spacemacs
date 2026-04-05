@@ -280,6 +280,30 @@ Return the list of results."
   (select-window new-window)
   (org-id-open path _)
   (evil-window-move-far-right))
+(defun compile-internal (command &rest _args)
+  "Modern wrapper for LilyPond's outdated compile-internal calls."
+  (compilation-start command))
+(defun ndu/lilypond-mode ()
+  (add-to-list 'load-path "~/.emacs.d/manuallyInstalled")
+  (load "~/.emacs.d/manuallyInstalled/lilypond-mode.el")
+  (require 'lilypond-mode)
+  (eval-after-load "lilypond-mode"
+    '(setq LilyPond-command-alist
+           (let ((lily-path "lilypond")) ; Homebrew binary is in your PATH as "lilypond"
+             `(("LilyPond" ,(concat lily-path " %s") "C-c C-c" "Compiling")
+               ("2Click" ,(concat lily-path " %s") "" "Second click")
+               ("View" "open %s.pdf" "C-c C-v" "Viewing")
+               ("Midi" "open %s.midi" "C-c C-m" "Playing")))))
+  (autoload 'lilypond-mode "lilypond-mode")
+  (add-to-list 'auto-mode-alist '("\\.ly$" . lilypond-mode))
+  (add-to-list 'auto-mode-alist '("\\.ily$" . lilypond-mode))
+  (add-hook 'lilypond-mode-hook (lambda () (turn-on-font-lock)))
+  (setq locale-coding-system 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+  (set-selection-coding-system 'utf-8)
+  (prefer-coding-system 'utf-8)
+  (setq LilyPond-midi-command "open"))
 (defun ndu/org-mode ()
   (load "~/.emacs.d/manuallyInstalled/vanish.el")
   (require 'vanish)
@@ -714,6 +738,7 @@ Return the list of results."
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            ndu/org-mode
+           ndu/lilypond-mode
            tab-bar-mode
            ndu/emacs-lisp))
   ;; Suppress eshell warnings
