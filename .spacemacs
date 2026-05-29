@@ -725,7 +725,7 @@ Return the list of results."
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            ndu/org-mode
-                                        ; ndu/lilypond-mode
+           ndu/lilypond-mode
            tab-bar-mode
            ndu/emacs-lisp))
   ;; Suppress eshell warnings
