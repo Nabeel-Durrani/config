@@ -285,7 +285,7 @@ Return the list of results."
   (compilation-start command))
 (defun ndu/lilypond-mode ()
   (add-to-list 'load-path "~/.emacs.d/manuallyInstalled")
-  (load "~/.emacs.d/manuallyInstalled/lilypond-mode.el")
+                                        ; (load "~/.emacs.d/manuallyInstalled/lilypond-mode.el")
   (require 'lilypond-mode)
   (eval-after-load "lilypond-mode"
     '(setq LilyPond-command-alist
@@ -538,13 +538,6 @@ Return the list of results."
    ;; Major mode leader key accessible in `emacs state' and `insert state'.
    ;; (default "C-M-m)
    dotspacemacs-major-mode-emacs-leader-key "C-M-m"
-   ;; The command key used for Evil commands (ex-commands) and
-   ;; Emacs commands (M-x).
-   ;; By default the command key is `:' so ex-commands are executed like in
-   ;; Vim with `:' and Emacs commands are executed with `<leader> :'.
-   dotspacemacs-command-key ":"
-   ;; If non nil `Y' is remapped to `y$'. (default t)
-   dotspacemacs-remap-Y-to-y$ t
    ;; Location where to auto-save files. Possible values are `original' to
    ;; auto-save the file in-place, `cache' to auto-save the file to another
    ;; file stored in the cache directory and `nil' to disable auto-saving.
@@ -554,12 +547,6 @@ Return the list of results."
    ;; `find-files' (SPC f f), `find-spacemacs-file' (SPC f e s), and
    ;; `find-contrib-file' (SPC f e c) are replaced. (default nil)
    dotspacemacs-use-ido t
-   ;; If non nil, `helm' will try to miminimize the space it uses.
-   ;; (default nil)
-   dotspacemacs-helm-resize nil
-   ;; if non nil, the helm header is hidden when there is only one source.
-   ;; (default nil)
-   dotspacemacs-helm-no-header nil
    ;; define the position to display `helm', options are `bottom', `top',
    ;; `left', or `right'. (default 'bottom)
                                         ;dotspacemacs-helm-position 'bottom
@@ -738,7 +725,7 @@ Return the list of results."
            spacemacs/toggle-highlight-current-line-globally-off
            global-whitespace-mode
            ndu/org-mode
-           ndu/lilypond-mode
+                                        ; ndu/lilypond-mode
            tab-bar-mode
            ndu/emacs-lisp))
   ;; Suppress eshell warnings
