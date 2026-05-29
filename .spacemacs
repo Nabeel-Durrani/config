@@ -388,7 +388,18 @@ Return the list of results."
   (custom-set-faces '(org-checkbox ((t (:foreground "red" :weight bold)))))
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "j" #'org-match-sparse-tree)
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "n" #'ndu/previous-match)
-  (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" #'ndu/next-match))
+  (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" #'ndu/next-match)
+  (with-eval-after-load 'ox-latex
+    ;; 1. Remove the legacy 'ucs' list entry entirely
+    (setq org-latex-default-packages-alist
+          (assoc-delete-all "ucs" org-latex-default-packages-alist))
+    ;; 2. Stop Org from calling "utf8x" which silently chains the ucs package
+    (setq org-latex-default-packages-alist
+          (delete '("utf8x" "inputenc" t) org-latex-default-packages-alist))
+    ;; 3. Force clean, modern standard utf8 instead of legacy variants
+    (setq org-latex-inputenc-alist '(("utf8" . "utf8")))
+    ;; 4. Stop Org from outputting its own breaking hypersetup block
+    (setq org-latex-with-hyperref nil)))
 (defun ndu/latex ()
   (require 'ox-latex)
   (setq org-latex-inputenc-alist '(("utf8" . "utf8x")))
