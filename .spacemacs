@@ -193,8 +193,14 @@ Return the list of results."
   (require 'org)
   (insert " ")
   (if (and (boundp 'org-stored-links) org-stored-links)
-      (let ((latest-link (car org-stored-links)))
-        (insert (format "[[%s][%s]]" (car latest-link) (or (cadr latest-link) "")))
+      (let* ((latest-link (car org-stored-links))
+             (link-target (car latest-link))
+             (raw-desc (or (cadr latest-link) ""))
+             ;; Fix: Append the space AFTER the closing bracket of the description
+             (clean-desc (if (string-suffix-p "]" raw-desc)
+                             (concat raw-desc "\u200b")
+                           raw-desc)))
+        (insert (format "[[%s][%s]]" link-target clean-desc))
         (unless org-link-keep-stored-after-insertion
           (setq org-stored-links (cdr org-stored-links))))
     (user-error "No links currently stored in 'org-stored-links'"))
