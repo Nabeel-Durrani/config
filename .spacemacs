@@ -188,12 +188,17 @@ Return the list of results."
                    ;; Recurse for rest of elements.
                    (mapcar #'cdr args)))))
 (defun ndu/insert-last-stored-link ()
-  (require 'org)
+  "Insert the most recently stored Org link and clean up lines."
   (interactive)
+  (require 'org)
   (insert " ")
-  (call-interactively 'org-insert-last-stored-link)
+  (if (and (boundp 'org-stored-links) org-stored-links)
+      (let ((latest-link (car org-stored-links)))
+        (insert (format "[[%s][%s]]" (car latest-link) (or (cadr latest-link) "")))
+        (unless org-link-keep-stored-after-insertion
+          (setq org-stored-links (cdr org-stored-links))))
+    (user-error "No links currently stored in 'org-stored-links'"))
   (kill-line)
-  (forward-line -1)
   (end-of-line))
 (defun ndu/set-startup-visibility ()
   (interactive)
@@ -390,16 +395,69 @@ Return the list of results."
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "n" #'ndu/previous-match)
   (spacemacs/set-leader-keys-for-major-mode 'org-mode "m" #'ndu/next-match)
   (with-eval-after-load 'ox-latex
-    ;; 1. Remove the legacy 'ucs' list entry entirely
+    ;; 1. Maintain your strict package cleanups
     (setq org-latex-default-packages-alist
-          (assoc-delete-all "ucs" org-latex-default-packages-alist))
-    ;; 2. Stop Org from calling "utf8x" which silently chains the ucs package
-    (setq org-latex-default-packages-alist
-          (delete '("utf8x" "inputenc" t) org-latex-default-packages-alist))
-    ;; 3. Force clean, modern standard utf8 instead of legacy variants
+          (cl-delete-if (lambda (pkg)
+                          (let ((name (cadr pkg)))
+                            (member name '("ucs" "natbib" "cite" "apacite" "bibtex"))))
+                        org-latex-default-packages-alist))
+
     (setq org-latex-inputenc-alist '(("utf8" . "utf8")))
-    ;; 4. Stop Org from outputting its own breaking hypersetup block
-    (setq org-latex-with-hyperref nil)))
+    (setq org-latex-with-hyperref nil)
+    (setq org-cite-export-processors '((latex biblatex)))
+
+    ;; 2. Standard symbols dependencies
+    (add-to-list 'org-latex-packages-alist '("RGB" "xcolor" t))
+    (add-to-list 'org-latex-packages-alist '("normalem" "ulem" t)) ; Safely handles nested underlines/boxes
+    (add-to-list 'org-latex-packages-alist '("" "amssymb" t))
+
+    ;; 3. THE MASTER FILTER: Processes strings first, then wraps them in colorboxes
+    (defun my-org-latex-universal-filter (text backend info)
+      (when (org-export-derived-backend-p backend 'latex)
+        ;; A. Kill the breaking hidden Zero-Width Space character
+        (setq text (replace-regexp-in-string "​" "" text))
+
+        ;; B. Translate ALL Greek letters first (so they are safe inside code containers)
+        (setq text (replace-regexp-in-string "α" "\\\\ensuremath{\\\\alpha}" text))
+        (setq text (replace-regexp-in-string "β" "\\\\ensuremath{\\\\beta}" text))
+        (setq text (replace-regexp-in-string "γ" "\\\\ensuremath{\\\\gamma}" text))
+        (setq text (replace-regexp-in-string "δ" "\\\\ensuremath{\\\\delta}" text))
+        (setq text (replace-regexp-in-string "ε" "\\\\ensuremath{\\\\varepsilon}" text))
+        (setq text (replace-regexp-in-string "ζ" "\\\\ensuremath{\\\\zeta}" text))
+        (setq text (replace-regexp-in-string "η" "\\\\ensuremath{\\\\eta}" text))
+        (setq text (replace-regexp-in-string "θ" "\\\\ensuremath{\\\\theta}" text))
+        (setq text (replace-regexp-in-string "ι" "\\\\ensuremath{\\\\iota}" text))
+        (setq text (replace-regexp-in-string "κ" "\\\\ensuremath{\\\\kappa}" text))
+        (setq text (replace-regexp-in-string "λ" "\\\\ensuremath{\\\\lambda}" text))
+        (setq text (replace-regexp-in-string "μ" "\\\\ensuremath{\\\\mu}" text))
+        (setq text (replace-regexp-in-string "ν" "\\\\ensuremath{\\\\nu}" text))
+        (setq text (replace-regexp-in-string "ξ" "\\\\ensuremath{\\\\xi}" text))
+        (setq text (replace-regexp-in-string "ο" "o" text))
+        (setq text (replace-regexp-in-string "π" "\\\\ensuremath{\\\\pi}" text))
+        (setq text (replace-regexp-in-string "ρ" "\\\\ensuremath{\\\\rho}" text))
+        (setq text (replace-regexp-in-string "σ" "\\\\ensuremath{\\\\sigma}" text))
+        (setq text (replace-regexp-in-string "ς" "\\\\ensuremath{\\\\varsigma}" text))
+        (setq text (replace-regexp-in-string "τ" "\\\\ensuremath{\\\\tau}" text))
+        (setq text (replace-regexp-in-string "υ" "\\\\ensuremath{\\\\upsilon}" text))
+        (setq text (replace-regexp-in-string "φ" "\\\\ensuremath{\\\\phi}" text))
+        (setq text (replace-regexp-in-string "χ" "\\\\ensuremath{\\\\chi}" text))
+        (setq text (replace-regexp-in-string "ψ" "\\\\ensuremath{\\\\psi}" text))
+        (setq text (replace-regexp-in-string "ω" "\\\\ensuremath{\\\\omega}" text))
+
+        ;; C. Translate Arrows
+        (setq text (replace-regexp-in-string "⟶" "\\\\ensuremath{\\\\longrightarrow}" text))
+        (setq text (replace-regexp-in-string "→" "\\\\ensuremath{\\\\rightarrow}" text))
+        (setq text (replace-regexp-in-string "←" "\\\\ensuremath{\\\\leftarrow}" text))
+        (setq text (replace-regexp-in-string "⟹" "\\\\ensuremath{\\\\Longrightarrow}" text))))
+
+    ;; Mount the filter globally
+    (add-to-list 'org-export-filter-final-output-functions #'my-org-latex-universal-filter))
+  (setq org-list-allow-alphabetical t)
+  (setq org-list-demote-modify-bullet
+        '(("*" . "+")   ; Level 1 (-) turns into Level 2 (+) on indent
+          ("+" . "-")  ; Level 2 (+) turns into Level 3 (1.) on indent
+          ("-" . "1.") ; Level 3 (1.) turns into Level 4 (a.) on indent
+          ("1." . "a."))))
 (defun ndu/latex ()
   (require 'ox-latex)
   (setq org-latex-inputenc-alist '(("utf8" . "utf8x")))
@@ -472,7 +530,7 @@ Return the list of results."
    ;; of a list then all discovered layers will be installed.
    dotspacemacs-configuration-layers
    '(python
-     pdf-tools html osx org git pdf olivetti ivy
+     html osx org git pdf ivy
      (shell :variables shell-default-shell 'eshell)
                                         ; (auto-completion ;:variables spacemacs-default-company-backends '(company-files ;company-capf))
      better-defaults markdown
@@ -610,10 +668,6 @@ Return the list of results."
    ;; If non nil advises quit functions to keep server open when quitting.
    ;; (default nil)
    dotspacemacs-persistent-server nil
-   ;; List of search tool executable names. Spacemacs uses the first installed
-   ;; tool of the list. Supported tools are `ag', `pt', `ack' and `grep'.
-   ;; (default '("ag" "pt" "ack" "grep"))
-   dotspacemacs-search-tools '("ag" "pt" "ack" "grep")
    ;; The default package repository used if no explicit repository has been
    ;; specified with an installed package.
    ;; Not used for now. (default nil)
