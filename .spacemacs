@@ -1,5 +1,22 @@
 (defconst olivetti-packages
   '(olivetti))
+(defun ndu/org-align-all-tags ()
+  "Align all tags across the entire current Org-mode buffer."
+  (interactive)
+  (if (derived-mode-p 'org-mode)
+      (progn
+        (org-align-all-tags)
+        (message "All Org tags aligned successfully!"))
+    (user-error "This function can only be used in Org-mode buffers")))
+(defun ndu/org-paste-and-align-tags ()
+  "Paste (yank) text at point and automatically realign all Org tags."
+  (interactive)
+  (if (derived-mode-p 'org-mode)
+      (progn
+        (yank)                  ; Paste the text
+        (org-align-all-tags)    ; Realign everything
+        (message "Text pasted and tags realigned!"))
+    (user-error "This function can only be used in Org-mode buffers")))
 (defun olivetti/init-olivetti ()
   (use-package olivetti))
 (defvar-local ndu/popup-origin-buffer nil
@@ -760,7 +777,7 @@ Return the list of results."
      ("oj" ndu/add-card-tag)                ("oJ" ndu/remove-card-tag)
      ("ol" ndu/add-outline-tag)             ("oL" ndu/remove-outline-tag)
      ("on" tab-bar-switch-to-next-tab)      ("oN" tab-bar-switch-to-prev-tab)
-     ("ok" ndu/add-question-tag)            ("oK" ndu/remove-question-tag)
+     ("ok" ndu/org-align-all-tags)          ("oK" ndu/org-paste-and-align-tags)
      ("ov" ndu/expand)                      ("oV" ndu/expand-all)
      ("og" ndu/align-tags)                  ("oG" vanish-mode)
      ("oi" ndu/cite-insert)                 ("oI" org-cite-insert)
